@@ -220,7 +220,11 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
             <SheetTitle className="font-display text-xl">
               {isEditing ? "Modifica Recensione" : "Nuova Recensione"}
             </SheetTitle>
-            
+            <button
+              type="button"
+              onClick={handleClose}
+              className="rounded-full p-2 hover:bg-muted transition-colors"
+            >
               <X className="w-4 h-4 text-muted-foreground" />
             </button>
           </div>
