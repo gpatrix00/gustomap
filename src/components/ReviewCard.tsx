@@ -7,7 +7,7 @@ interface ReviewCardProps {
   rating: number;
   date: string;
   location: string;
-  image: string;
+  images: string[];
   description: string;
   className?: string;
   onClick?: () => void;
@@ -19,7 +19,7 @@ const ReviewCard = ({
   rating,
   date,
   location,
-  image,
+  images,
   description,
   className,
   onClick,
@@ -29,6 +29,8 @@ const ReviewCard = ({
     bar: "Bar",
     caffetteria: "Caffetteria",
   };
+
+  const coverImage = images[0] || "/placeholder.svg";
 
   return (
     <article
@@ -41,14 +43,19 @@ const ReviewCard = ({
       {/* Image */}
       <div className="relative h-48 overflow-hidden">
         <img
-          src={image}
+          src={coverImage}
           alt={name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
-        <div className="absolute top-3 left-3">
+        <div className="absolute top-3 left-3 flex gap-2">
           <span className="px-3 py-1 bg-card/90 backdrop-blur-sm text-xs font-medium rounded-full text-foreground">
             {typeLabels[type]}
           </span>
+          {images.length > 1 && (
+            <span className="px-2 py-1 bg-card/90 backdrop-blur-sm text-xs font-medium rounded-full text-foreground">
+              +{images.length - 1}
+            </span>
+          )}
         </div>
       </div>
 

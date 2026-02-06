@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from "react";
-import { X, Star, Camera, MapPin, Utensils, Coffee, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { X, Star, MapPin, Utensils, Coffee, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { supabase } from "@/integrations/supabase/client";
+import MultiImageUpload from "./MultiImageUpload";
 
 type PlaceType = "ristorante" | "bar" | "caffetteria";
 
@@ -21,7 +21,7 @@ interface ReviewFormData {
   rating: number;
   location: string;
   description: string;
-  image: File | string | null;
+  images: (File | string)[];
 }
 
 interface EditingReview {
@@ -31,7 +31,7 @@ interface EditingReview {
   rating: number;
   location: string;
   description: string;
-  image_url: string | null;
+  image_urls: string[];
 }
 
 interface AddReviewFormProps {
@@ -43,16 +43,14 @@ interface AddReviewFormProps {
 }
 
 const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }: AddReviewFormProps) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<ReviewFormData>({
     name: "",
     type: "ristorante",
     rating: 0,
     location: "",
     description: "",
-    image: null,
+    images: [],
   });
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [hoverRating, setHoverRating] = useState(0);
   const [errors, setErrors] = useState<Partial<Record<keyof ReviewFormData, string>>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -63,13 +61,12 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
     if (editingReview) {
       setFormData({
         name: editingReview.name,
-        type: editingReview.type as PlaceType,
+        type: editingReview.type,
         rating: editingReview.rating,
         location: editingReview.location,
         description: editingReview.description,
-        image: editingReview.image_url,
+        images: editingReview.image_urls || [],
       });
-      setImagePreview(editingReview.image_url);
     } else {
       resetForm();
     }
@@ -80,24 +77,6 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
     { value: "bar", label: "Bar", icon: Coffee },
     { value: "caffetteria", label: "Caffetteria", icon: Coffee },
   ];
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setErrors((prev) => ({ ...prev, image: "Immagine troppo grande (max 5MB)" }));
-        return;
-      }
-      setFormData((prev) => ({ ...prev, image: file }));
-      setErrors((prev) => ({ ...prev, image: undefined }));
-      
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof ReviewFormData, string>> = {};
@@ -124,8 +103,8 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
       newErrors.description = "La descrizione deve essere inferiore a 500 caratteri";
     }
 
-    if (!formData.image && !isEditing) {
-      newErrors.image = "Aggiungi una foto";
+    if (formData.images.length === 0 && !isEditing) {
+      newErrors.images = "Aggiungi almeno una foto";
     }
 
     setErrors(newErrors);
@@ -159,9 +138,8 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
       rating: 0,
       location: "",
       description: "",
-      image: null,
+      images: [],
     });
-    setImagePreview(null);
     setErrors({});
     setHoverRating(0);
   };
@@ -194,44 +172,13 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
             {/* Photo Upload */}
             <div className="space-y-2">
               <Label className="text-sm font-medium">Foto</Label>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
+              <MultiImageUpload
+                images={formData.images}
+                onChange={(images) => setFormData((prev) => ({ ...prev, images }))}
+                maxImages={5}
+                error={errors.images}
                 disabled={submitting}
-                className={cn(
-                  "w-full h-48 rounded-lg border-2 border-dashed transition-all duration-200",
-                  "flex flex-col items-center justify-center gap-2",
-                  imagePreview
-                    ? "border-transparent overflow-hidden"
-                    : "border-border hover:border-primary hover:bg-primary/5",
-                  errors.image && "border-destructive"
-                )}
-              >
-                {imagePreview ? (
-                  <img
-                    src={imagePreview}
-                    alt="Preview"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <>
-                    <Camera className="w-8 h-8 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">
-                      Tocca per aggiungere una foto
-                    </span>
-                  </>
-                )}
-              </button>
-              {errors.image && (
-                <p className="text-xs text-destructive">{errors.image}</p>
-              )}
+              />
             </div>
 
             {/* Name */}

@@ -41,28 +41,48 @@ const Index = () => {
     avgRating: reviews.length > 0 ? reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length : 0,
   };
 
-  const uploadImage = async (image: File | string | null): Promise<string | null> => {
-    if (!image || typeof image === "string") {
-      return typeof image === "string" ? image : null;
-    }
-
+  const uploadImages = async (images: (File | string)[]): Promise<string[]> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Utente non autenticato");
 
-    const fileExt = image.name.split(".").pop();
-    const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+    const uploadedUrls: string[] = [];
 
-    const { error: uploadError } = await supabase.storage
-      .from("review-images")
-      .upload(fileName, image);
+    for (const image of images) {
+      if (typeof image === "string") {
+        // Already a URL
+        uploadedUrls.push(image);
+      } else {
+        // Upload file
+        const fileExt = image.name.split(".").pop();
+        const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
 
-    if (uploadError) throw uploadError;
+        const { error: uploadError } = await supabase.storage
+          .from("review-images")
+          .upload(fileName, image);
 
-    const { data: { publicUrl } } = supabase.storage
-      .from("review-images")
-      .getPublicUrl(fileName);
+        if (uploadError) throw uploadError;
 
-    return publicUrl;
+        const { data: { publicUrl } } = supabase.storage
+          .from("review-images")
+          .getPublicUrl(fileName);
+
+        uploadedUrls.push(publicUrl);
+      }
+    }
+
+    return uploadedUrls;
+  };
+
+  const getImageUrls = (review: Review): string[] => {
+    // Handle the image_urls field which could be an array or null
+    if (review.image_urls && Array.isArray(review.image_urls)) {
+      return review.image_urls as string[];
+    }
+    // Fallback to legacy image_url
+    if (review.image_url) {
+      return [review.image_url];
+    }
+    return [];
   };
 
   const handleAddReview = async (data: {
@@ -71,10 +91,10 @@ const Index = () => {
     rating: number;
     location: string;
     description: string;
-    image: File | string | null;
+    images: (File | string)[];
   }) => {
     try {
-      const imageUrl = await uploadImage(data.image);
+      const imageUrls = await uploadImages(data.images);
       
       await addReview({
         name: data.name,
@@ -82,7 +102,8 @@ const Index = () => {
         rating: data.rating,
         location: data.location,
         description: data.description,
-        image_url: imageUrl,
+        image_url: imageUrls[0] || null, // Keep for backwards compatibility
+        image_urls: imageUrls,
       });
 
       toast.success("Recensione pubblicata!", {
@@ -103,13 +124,10 @@ const Index = () => {
     rating: number;
     location: string;
     description: string;
-    image: File | string | null;
+    images: (File | string)[];
   }) => {
     try {
-      let imageUrl = data.image;
-      if (data.image instanceof File) {
-        imageUrl = await uploadImage(data.image);
-      }
+      const imageUrls = await uploadImages(data.images);
 
       await updateReview(id, {
         name: data.name,
@@ -117,7 +135,8 @@ const Index = () => {
         rating: data.rating,
         location: data.location,
         description: data.description,
-        image_url: typeof imageUrl === "string" ? imageUrl : null,
+        image_url: imageUrls[0] || null,
+        image_urls: imageUrls,
       });
 
       setEditingReview(null);
@@ -218,7 +237,7 @@ const Index = () => {
                   month: "short",
                 })}
                 location={review.location}
-                image={review.image_url || "/placeholder.svg"}
+                images={getImageUrls(review)}
                 description={review.description}
                 onClick={() => handleReviewClick(review)}
                 className={`animation-delay-${index * 100}`}
@@ -254,7 +273,7 @@ const Index = () => {
           rating: editingReview.rating,
           location: editingReview.location,
           description: editingReview.description,
-          image_url: editingReview.image_url,
+          image_urls: getImageUrls(editingReview),
         } : null}
         onUpdate={handleUpdateReview}
       />
@@ -273,7 +292,7 @@ const Index = () => {
             year: "numeric",
           }),
           location: selectedReview.location,
-          image: selectedReview.image_url || "/placeholder.svg",
+          images: getImageUrls(selectedReview),
           description: selectedReview.description,
         } : null}
         onEdit={() => selectedReview && handleEditReview(selectedReview)}

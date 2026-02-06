@@ -12,6 +12,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import ImageGallery from "./ImageGallery";
 
 interface Review {
   id: string;
@@ -20,7 +21,7 @@ interface Review {
   rating: number;
   date: string;
   location: string;
-  image: string;
+  images: string[];
   description: string;
 }
 
@@ -58,30 +59,36 @@ const ReviewDetail = ({ open, onOpenChange, review, onEdit, onDelete }: ReviewDe
         className="h-full p-0 border-0 rounded-none"
       >
         <div className="h-full flex flex-col bg-background">
-          {/* Hero Image */}
+          {/* Hero Image Gallery */}
           <div className="relative h-[45vh] min-h-[300px]">
-            <img
-              src={review.image}
-              alt={review.name}
-              className="w-full h-full object-cover"
-            />
+            <ImageGallery images={review.images} className="h-full" />
+            
             {/* Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent pointer-events-none" />
             
             {/* Back Button */}
             <button
               onClick={() => onOpenChange(false)}
-              className="absolute top-4 left-4 w-10 h-10 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors shadow-soft"
+              className="absolute top-4 left-4 w-10 h-10 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors shadow-soft z-10"
             >
               <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
 
             {/* Type Badge */}
-            <div className="absolute top-4 right-4">
+            <div className="absolute top-4 right-4 z-10">
               <span className="px-3 py-1.5 bg-background/80 backdrop-blur-sm text-sm font-medium rounded-full text-foreground">
                 {typeLabels[review.type]}
               </span>
             </div>
+
+            {/* Photo Count */}
+            {review.images.length > 1 && (
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
+                <span className="px-2 py-1 bg-background/80 backdrop-blur-sm text-xs font-medium rounded-full text-foreground">
+                  {review.images.length} foto
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Content */}
