@@ -1,27 +1,54 @@
-import { Star, MapPin, Clock, X, ArrowLeft } from "lucide-react";
+import { Star, MapPin, Clock, ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+interface Review {
+  id: string;
+  name: string;
+  type: "ristorante" | "bar" | "caffetteria";
+  rating: number;
+  date: string;
+  location: string;
+  image: string;
+  description: string;
+}
 
 interface ReviewDetailProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  review: {
-    name: string;
-    type: "ristorante" | "bar" | "caffetteria";
-    rating: number;
-    date: string;
-    location: string;
-    image: string;
-    description: string;
-  } | null;
+  review: Review | null;
+  onEdit: (review: Review) => void;
+  onDelete: (reviewId: string) => void;
 }
 
-const ReviewDetail = ({ open, onOpenChange, review }: ReviewDetailProps) => {
+const ReviewDetail = ({ open, onOpenChange, review, onEdit, onDelete }: ReviewDetailProps) => {
   if (!review) return null;
 
   const typeLabels = {
     ristorante: "Ristorante",
     bar: "Bar",
     caffetteria: "Caffetteria",
+  };
+
+  const handleEdit = () => {
+    onOpenChange(false);
+    onEdit(review);
+  };
+
+  const handleDelete = () => {
+    onDelete(review.id);
+    onOpenChange(false);
   };
 
   return (
@@ -105,6 +132,49 @@ const ReviewDetail = ({ open, onOpenChange, review }: ReviewDetailProps) => {
               <p className="text-muted-foreground font-body leading-relaxed">
                 {review.description}
               </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-4">
+              <Button
+                onClick={handleEdit}
+                variant="outline"
+                className="flex-1 h-12 gap-2"
+              >
+                <Pencil className="w-4 h-4" />
+                Modifica
+              </Button>
+              
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="flex-1 h-12 gap-2 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Elimina
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="max-w-[90%] rounded-lg">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="font-display">
+                      Eliminare questa recensione?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Questa azione non può essere annullata. La recensione di "{review.name}" verrà eliminata definitivamente.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Annulla</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDelete}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Elimina
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
         </div>

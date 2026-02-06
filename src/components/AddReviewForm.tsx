@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { X, Star, Camera, MapPin, Utensils, Coffee } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -23,13 +23,25 @@ interface ReviewFormData {
   image: string | null;
 }
 
+interface EditingReview {
+  id: string;
+  name: string;
+  type: PlaceType;
+  rating: number;
+  location: string;
+  description: string;
+  image: string;
+}
+
 interface AddReviewFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: ReviewFormData) => void;
+  editingReview?: EditingReview | null;
+  onUpdate?: (id: string, data: ReviewFormData) => void;
 }
 
-const AddReviewForm = ({ open, onOpenChange, onSubmit }: AddReviewFormProps) => {
+const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }: AddReviewFormProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<ReviewFormData>({
     name: "",
@@ -41,6 +53,23 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit }: AddReviewFormProps) => 
   });
   const [hoverRating, setHoverRating] = useState(0);
   const [errors, setErrors] = useState<Partial<Record<keyof ReviewFormData, string>>>({});
+
+  const isEditing = !!editingReview;
+
+  useEffect(() => {
+    if (editingReview) {
+      setFormData({
+        name: editingReview.name,
+        type: editingReview.type,
+        rating: editingReview.rating,
+        location: editingReview.location,
+        description: editingReview.description,
+        image: editingReview.image,
+      });
+    } else {
+      resetForm();
+    }
+  }, [editingReview, open]);
 
   const typeOptions: { value: PlaceType; label: string; icon: typeof Utensils }[] = [
     { value: "ristorante", label: "Ristorante", icon: Utensils },
@@ -100,7 +129,11 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit }: AddReviewFormProps) => 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      onSubmit(formData);
+      if (isEditing && editingReview && onUpdate) {
+        onUpdate(editingReview.id, formData);
+      } else {
+        onSubmit(formData);
+      }
       resetForm();
       onOpenChange(false);
     }
@@ -119,14 +152,21 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit }: AddReviewFormProps) => 
     setHoverRating(0);
   };
 
+  const handleClose = () => {
+    resetForm();
+    onOpenChange(false);
+  };
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={handleClose}>
       <SheetContent side="bottom" className="h-[90vh] rounded-t-3xl px-0">
         <SheetHeader className="px-6 pb-4 border-b border-border">
           <div className="flex items-center justify-between">
-            <SheetTitle className="font-display text-xl">Nuova Recensione</SheetTitle>
+            <SheetTitle className="font-display text-xl">
+              {isEditing ? "Modifica Recensione" : "Nuova Recensione"}
+            </SheetTitle>
             <button
-              onClick={() => onOpenChange(false)}
+              onClick={handleClose}
               className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center hover:bg-muted transition-colors"
             >
               <X className="w-4 h-4 text-muted-foreground" />
@@ -329,7 +369,7 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit }: AddReviewFormProps) => 
               type="submit"
               className="w-full h-12 text-base font-medium bg-primary hover:bg-primary/90"
             >
-              Pubblica Recensione
+              {isEditing ? "Salva Modifiche" : "Pubblica Recensione"}
             </Button>
           </div>
         </form>
