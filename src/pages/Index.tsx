@@ -240,6 +240,11 @@ const Index = () => {
           </p>
         </div>
 
+        {/* View Toggle */}
+        <div className="flex justify-end">
+          <ViewToggle mode={viewMode} onChange={setViewMode} />
+        </div>
+
         {/* Search Bar */}
         <SearchBar
           value={searchQuery}
@@ -250,11 +255,8 @@ const Index = () => {
         {/* Stats */}
         <StatsBar {...stats} />
 
-        {/* View Toggle + Filters */}
-        <div className="flex items-center justify-between gap-4">
-          <FilterTabs activeFilter={filter} onFilterChange={setFilter} />
-          <ViewToggle mode={viewMode} onChange={setViewMode} />
-        </div>
+        {/* Filters */}
+        <FilterTabs activeFilter={filter} onFilterChange={setFilter} />
 
         {/* Content */}
         {viewMode === "map" ? (
