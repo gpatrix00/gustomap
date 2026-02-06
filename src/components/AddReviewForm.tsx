@@ -208,13 +208,16 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
   const hasCoordinates = formData.latitude !== undefined && formData.longitude !== undefined;
 
   return (
-    <Sheet open={open} onOpenChange={handleClose}>
+    <Sheet open={open}>
       <SheetContent side="bottom" className="h-[90vh] rounded-t-3xl px-0">
         <SheetHeader className="px-6 pb-4 border-b border-border">
           <div className="flex items-center justify-between">
             <SheetTitle className="font-display text-xl">
               {isEditing ? "Modifica Recensione" : "Nuova Recensione"}
             </SheetTitle>
+            <button type="button" onClick={handleClose} className="rounded-full p-2 hover:bg-muted transition-colors">
+              <X className="w-4 h-4 text-muted-foreground" />
+            </button>
           </div>
         </SheetHeader>
 
