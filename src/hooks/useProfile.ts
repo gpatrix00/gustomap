@@ -59,21 +59,27 @@ export const useProfile = () => {
   }, [user]);
 
   const updateProfile = async (updates: {
-    first_name?: string;
-    last_name?: string;
-    avatar_url?: string;
+    first_name?: string | null;
+    last_name?: string | null;
+    avatar_url?: string | null;
   }) => {
     if (!user) throw new Error("Utente non autenticato");
 
+    // Convert undefined to null for proper SQL update
+    const cleanUpdates: Record<string, string | null> = {};
+    if (updates.first_name !== undefined) cleanUpdates.first_name = updates.first_name || null;
+    if (updates.last_name !== undefined) cleanUpdates.last_name = updates.last_name || null;
+    if (updates.avatar_url !== undefined) cleanUpdates.avatar_url = updates.avatar_url || null;
+
     const { data, error } = await supabase
       .from("profiles")
-      .update(updates)
+      .update(cleanUpdates)
       .eq("user_id", user.id)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
-    setProfile(data as Profile);
+    if (data) setProfile(data as Profile);
     return data;
   };
 
