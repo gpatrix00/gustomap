@@ -59,20 +59,24 @@ const ProfileForm = ({ open, onOpenChange }: ProfileFormProps) => {
     setLoading(true);
 
     try {
-      let avatarUrl = profile?.avatar_url;
-
       if (avatarDeleted) {
+        // Delete avatar first, then update profile with name fields
         await deleteAvatar();
-        avatarUrl = undefined;
-      } else if (avatarFile) {
-        avatarUrl = await uploadAvatar(avatarFile);
-      }
-
-      if (!avatarDeleted) {
         await updateProfile({
-          first_name: firstName.trim() || undefined,
-          last_name: lastName.trim() || undefined,
-          avatar_url: avatarUrl || undefined,
+          first_name: firstName.trim() || null,
+          last_name: lastName.trim() || null,
+        });
+      } else if (avatarFile) {
+        const avatarUrl = await uploadAvatar(avatarFile);
+        await updateProfile({
+          first_name: firstName.trim() || null,
+          last_name: lastName.trim() || null,
+          avatar_url: avatarUrl,
+        });
+      } else {
+        await updateProfile({
+          first_name: firstName.trim() || null,
+          last_name: lastName.trim() || null,
         });
       }
 

@@ -119,8 +119,8 @@ export const useProfile = () => {
       await supabase.storage.from("avatars").remove(filesToDelete);
     }
 
-    // Update profile to remove avatar_url
-    await updateProfile({ avatar_url: undefined });
+    // Update profile to remove avatar_url - use null explicitly
+    await updateProfile({ avatar_url: null });
   };
 
   useEffect(() => {
