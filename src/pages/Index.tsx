@@ -241,9 +241,7 @@ const Index = () => {
         </div>
 
         {/* View Toggle */}
-        <div className="flex justify-end">
-          <ViewToggle mode={viewMode} onChange={setViewMode} />
-        </div>
+        <ViewToggle mode={viewMode} onChange={setViewMode} />
 
         {/* Search Bar */}
         <SearchBar
