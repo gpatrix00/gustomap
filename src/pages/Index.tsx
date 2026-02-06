@@ -10,6 +10,8 @@ import AddReviewForm from "@/components/AddReviewForm";
 import ReviewDetail from "@/components/ReviewDetail";
 import AuthForm from "@/components/AuthForm";
 import SearchBar from "@/components/SearchBar";
+import MapView from "@/components/MapView";
+import ViewToggle from "@/components/ViewToggle";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
@@ -17,6 +19,7 @@ import { Review } from "@/services/reviewsService";
 
 type FilterType = "tutti" | "ristoranti" | "bar";
 type PlaceType = "ristorante" | "bar" | "caffetteria";
+type ViewMode = "list" | "map";
 
 const Index = () => {
   const { user, loading: authLoading, isAuthenticated } = useAuth();
@@ -24,6 +27,7 @@ const Index = () => {
   
   const [filter, setFilter] = useState<FilterType>("tutti");
   const [searchQuery, setSearchQuery] = useState("");
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedReview, setSelectedReview] = useState<Review | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -107,6 +111,8 @@ const Index = () => {
     location: string;
     description: string;
     images: (File | string)[];
+    latitude?: number;
+    longitude?: number;
   }) => {
     try {
       const imageUrls = await uploadImages(data.images);
@@ -117,8 +123,10 @@ const Index = () => {
         rating: data.rating,
         location: data.location,
         description: data.description,
-        image_url: imageUrls[0] || null, // Keep for backwards compatibility
+        image_url: imageUrls[0] || null,
         image_urls: imageUrls,
+        latitude: data.latitude || null,
+        longitude: data.longitude || null,
       });
 
       toast.success("Recensione pubblicata!", {
@@ -140,6 +148,8 @@ const Index = () => {
     location: string;
     description: string;
     images: (File | string)[];
+    latitude?: number;
+    longitude?: number;
   }) => {
     try {
       const imageUrls = await uploadImages(data.images);
@@ -152,6 +162,8 @@ const Index = () => {
         description: data.description,
         image_url: imageUrls[0] || null,
         image_urls: imageUrls,
+        latitude: data.latitude || null,
+        longitude: data.longitude || null,
       });
 
       setEditingReview(null);
@@ -238,50 +250,73 @@ const Index = () => {
         {/* Stats */}
         <StatsBar {...stats} />
 
-        {/* Filters */}
-        <FilterTabs activeFilter={filter} onFilterChange={setFilter} />
-
-        {/* Reviews List */}
-        <div className="space-y-4">
-          {reviewsLoading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : filteredReviews.length > 0 ? (
-            filteredReviews.map((review, index) => (
-              <ReviewCard
-                key={review.id}
-                name={review.name}
-                type={review.type as PlaceType}
-                rating={review.rating}
-                date={new Date(review.created_at).toLocaleDateString("it-IT", {
-                  day: "numeric",
-                  month: "short",
-                })}
-                location={review.location}
-                images={getImageUrls(review)}
-                description={review.description}
-                onClick={() => handleReviewClick(review)}
-                className={`animation-delay-${index * 100}`}
-              />
-            ))
-          ) : (
-            <div className="text-center py-12 space-y-2">
-              <p className="text-muted-foreground">
-                {searchQuery
-                  ? `Nessun risultato per "${searchQuery}"`
-                  : filter === "tutti" 
-                    ? "Non hai ancora aggiunto recensioni."
-                    : "Nessuna recensione trovata per questo filtro."}
-              </p>
-              {!searchQuery && filter === "tutti" && (
-                <p className="text-sm text-muted-foreground">
-                  Tocca il bottone + per aggiungere la tua prima recensione!
-                </p>
-              )}
-            </div>
-          )}
+        {/* View Toggle + Filters */}
+        <div className="flex items-center justify-between gap-4">
+          <FilterTabs activeFilter={filter} onFilterChange={setFilter} />
+          <ViewToggle mode={viewMode} onChange={setViewMode} />
         </div>
+
+        {/* Content */}
+        {viewMode === "map" ? (
+          <MapView
+            reviews={filteredReviews.map((review) => ({
+              id: review.id,
+              name: review.name,
+              type: review.type,
+              rating: review.rating,
+              location: review.location,
+              latitude: review.latitude || 0,
+              longitude: review.longitude || 0,
+              image: getImageUrls(review)[0],
+            }))}
+            onReviewClick={(id) => {
+              const review = reviews.find((r) => r.id === id);
+              if (review) handleReviewClick(review);
+            }}
+            className="h-[60vh] min-h-[400px]"
+          />
+        ) : (
+          <div className="space-y-4">
+            {reviewsLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : filteredReviews.length > 0 ? (
+              filteredReviews.map((review, index) => (
+                <ReviewCard
+                  key={review.id}
+                  name={review.name}
+                  type={review.type as PlaceType}
+                  rating={review.rating}
+                  date={new Date(review.created_at).toLocaleDateString("it-IT", {
+                    day: "numeric",
+                    month: "short",
+                  })}
+                  location={review.location}
+                  images={getImageUrls(review)}
+                  description={review.description}
+                  onClick={() => handleReviewClick(review)}
+                  className={`animation-delay-${index * 100}`}
+                />
+              ))
+            ) : (
+              <div className="text-center py-12 space-y-2">
+                <p className="text-muted-foreground">
+                  {searchQuery
+                    ? `Nessun risultato per "${searchQuery}"`
+                    : filter === "tutti" 
+                      ? "Non hai ancora aggiunto recensioni."
+                      : "Nessuna recensione trovata per questo filtro."}
+                </p>
+                {!searchQuery && filter === "tutti" && (
+                  <p className="text-sm text-muted-foreground">
+                    Tocca il bottone + per aggiungere la tua prima recensione!
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </main>
 
       <FloatingActionButton onClick={() => setIsFormOpen(true)} />
@@ -298,6 +333,8 @@ const Index = () => {
           location: editingReview.location,
           description: editingReview.description,
           image_urls: getImageUrls(editingReview),
+          latitude: editingReview.latitude,
+          longitude: editingReview.longitude,
         } : null}
         onUpdate={handleUpdateReview}
       />
