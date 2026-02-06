@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useReviews } from "@/hooks/useReviews";
 import Header from "@/components/Header";
@@ -9,6 +9,7 @@ import FloatingActionButton from "@/components/FloatingActionButton";
 import AddReviewForm from "@/components/AddReviewForm";
 import ReviewDetail from "@/components/ReviewDetail";
 import AuthForm from "@/components/AuthForm";
+import SearchBar from "@/components/SearchBar";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
@@ -22,17 +23,31 @@ const Index = () => {
   const { reviews, loading: reviewsLoading, addReview, updateReview, deleteReview, fetchReviews } = useReviews();
   
   const [filter, setFilter] = useState<FilterType>("tutti");
+  const [searchQuery, setSearchQuery] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedReview, setSelectedReview] = useState<Review | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [editingReview, setEditingReview] = useState<Review | null>(null);
 
-  const filteredReviews = reviews.filter((review) => {
-    if (filter === "tutti") return true;
-    if (filter === "ristoranti") return review.type === "ristorante";
-    if (filter === "bar") return review.type === "bar" || review.type === "caffetteria";
-    return true;
-  });
+  const filteredReviews = useMemo(() => {
+    return reviews.filter((review) => {
+      // Type filter
+      const typeMatch = 
+        filter === "tutti" ? true :
+        filter === "ristoranti" ? review.type === "ristorante" :
+        filter === "bar" ? (review.type === "bar" || review.type === "caffetteria") :
+        true;
+
+      // Search filter
+      const query = searchQuery.toLowerCase().trim();
+      const searchMatch = !query || 
+        review.name.toLowerCase().includes(query) ||
+        review.location.toLowerCase().includes(query) ||
+        review.description.toLowerCase().includes(query);
+
+      return typeMatch && searchMatch;
+    });
+  }, [reviews, filter, searchQuery]);
 
   const stats = {
     totalReviews: reviews.length,
@@ -213,6 +228,13 @@ const Index = () => {
           </p>
         </div>
 
+        {/* Search Bar */}
+        <SearchBar
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="Cerca per nome o posizione..."
+        />
+
         {/* Stats */}
         <StatsBar {...stats} />
 
@@ -246,11 +268,13 @@ const Index = () => {
           ) : (
             <div className="text-center py-12 space-y-2">
               <p className="text-muted-foreground">
-                {filter === "tutti" 
-                  ? "Non hai ancora aggiunto recensioni."
-                  : "Nessuna recensione trovata per questo filtro."}
+                {searchQuery
+                  ? `Nessun risultato per "${searchQuery}"`
+                  : filter === "tutti" 
+                    ? "Non hai ancora aggiunto recensioni."
+                    : "Nessuna recensione trovata per questo filtro."}
               </p>
-              {filter === "tutti" && (
+              {!searchQuery && filter === "tutti" && (
                 <p className="text-sm text-muted-foreground">
                   Tocca il bottone + per aggiungere la tua prima recensione!
                 </p>
