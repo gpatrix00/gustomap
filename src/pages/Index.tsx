@@ -113,6 +113,7 @@ const Index = () => {
     images: (File | string)[];
     latitude?: number;
     longitude?: number;
+    cuisineType?: string;
   }) => {
     try {
       const imageUrls = await uploadImages(data.images);
@@ -128,6 +129,7 @@ const Index = () => {
         latitude: data.latitude || null,
         longitude: data.longitude || null,
         is_public: false,
+        cuisine_type: data.cuisineType || null,
       });
 
       toast.success("Recensione pubblicata!", {
@@ -151,6 +153,7 @@ const Index = () => {
     images: (File | string)[];
     latitude?: number;
     longitude?: number;
+    cuisineType?: string;
   }) => {
     try {
       const imageUrls = await uploadImages(data.images);
@@ -165,6 +168,7 @@ const Index = () => {
         image_urls: imageUrls,
         latitude: data.latitude || null,
         longitude: data.longitude || null,
+        cuisine_type: data.cuisineType || null,
       });
 
       setEditingReview(null);
@@ -309,6 +313,7 @@ const Index = () => {
                   location={review.location}
                   images={getImageUrls(review)}
                   description={review.description}
+                  cuisineType={review.cuisine_type}
                   onClick={() => handleReviewClick(review)}
                   className={`animation-delay-${index * 100}`}
                 />
@@ -349,6 +354,7 @@ const Index = () => {
           image_urls: getImageUrls(editingReview),
           latitude: editingReview.latitude,
           longitude: editingReview.longitude,
+          cuisine_type: editingReview.cuisine_type,
         } : null}
         onUpdate={handleUpdateReview}
       />
@@ -370,6 +376,7 @@ const Index = () => {
           images: getImageUrls(selectedReview),
           description: selectedReview.description,
           isPublic: selectedReview.is_public,
+          cuisineType: selectedReview.cuisine_type,
         } : null}
         onEdit={() => selectedReview && handleEditReview(selectedReview)}
         onDelete={() => selectedReview && handleDeleteReview(selectedReview.id)}

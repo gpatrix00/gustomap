@@ -9,9 +9,30 @@ interface ReviewCardProps {
   location: string;
   images: string[];
   description: string;
+  cuisineType?: string | null;
   className?: string;
   onClick?: () => void;
 }
+
+const CUISINE_LABELS: Record<string, string> = {
+  italiana: "Italiana",
+  giapponese: "Giapponese",
+  cinese: "Cinese",
+  messicana: "Messicana",
+  indiana: "Indiana",
+  thailandese: "Thailandese",
+  americana: "Americana",
+  francese: "Francese",
+  greca: "Greca",
+  spagnola: "Spagnola",
+  mediterranea: "Mediterranea",
+  pizza: "Pizzeria",
+  sushi: "Sushi",
+  steakhouse: "Steakhouse",
+  pesce: "Pesce",
+  vegetariana: "Vegetariana",
+  altro: "Altro",
+};
 
 const ReviewCard = ({
   name,
@@ -21,6 +42,7 @@ const ReviewCard = ({
   location,
   images,
   description,
+  cuisineType,
   className,
   onClick,
 }: ReviewCardProps) => {
@@ -47,10 +69,15 @@ const ReviewCard = ({
           alt={name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
-        <div className="absolute top-3 left-3 flex gap-2">
+        <div className="absolute top-3 left-3 flex flex-wrap gap-2">
           <span className="px-3 py-1 bg-card/90 backdrop-blur-sm text-xs font-medium rounded-full text-foreground">
             {typeLabels[type]}
           </span>
+          {cuisineType && CUISINE_LABELS[cuisineType] && (
+            <span className="px-3 py-1 bg-primary/90 backdrop-blur-sm text-xs font-medium rounded-full text-primary-foreground">
+              {CUISINE_LABELS[cuisineType]}
+            </span>
+          )}
           {images.length > 1 && (
             <span className="px-2 py-1 bg-card/90 backdrop-blur-sm text-xs font-medium rounded-full text-foreground">
               +{images.length - 1}
