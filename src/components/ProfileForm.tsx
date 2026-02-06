@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, Loader2, User } from "lucide-react";
+import { Camera, Loader2, User, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface ProfileFormProps {
@@ -14,10 +14,11 @@ interface ProfileFormProps {
 }
 
 const ProfileForm = ({ open, onOpenChange }: ProfileFormProps) => {
-  const { profile, updateProfile, uploadAvatar, refetch } = useProfile();
+  const { profile, updateProfile, uploadAvatar, deleteAvatar, refetch } = useProfile();
   const [firstName, setFirstName] = useState(profile?.first_name || "");
   const [lastName, setLastName] = useState(profile?.last_name || "");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarDeleted, setAvatarDeleted] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -43,7 +44,14 @@ const ProfileForm = ({ open, onOpenChange }: ProfileFormProps) => {
         setAvatarPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+      setAvatarDeleted(false);
     }
+  };
+
+  const handleDeleteAvatar = () => {
+    setAvatarPreview(null);
+    setAvatarFile(null);
+    setAvatarDeleted(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -53,17 +61,23 @@ const ProfileForm = ({ open, onOpenChange }: ProfileFormProps) => {
     try {
       let avatarUrl = profile?.avatar_url;
 
-      if (avatarFile) {
+      if (avatarDeleted) {
+        await deleteAvatar();
+        avatarUrl = undefined;
+      } else if (avatarFile) {
         avatarUrl = await uploadAvatar(avatarFile);
       }
 
-      await updateProfile({
-        first_name: firstName.trim() || undefined,
-        last_name: lastName.trim() || undefined,
-        avatar_url: avatarUrl || undefined,
-      });
+      if (!avatarDeleted) {
+        await updateProfile({
+          first_name: firstName.trim() || undefined,
+          last_name: lastName.trim() || undefined,
+          avatar_url: avatarUrl || undefined,
+        });
+      }
 
       await refetch();
+      setAvatarDeleted(false);
       toast.success("Profilo aggiornato!");
       onOpenChange(false);
     } catch (error: any) {
@@ -80,7 +94,8 @@ const ProfileForm = ({ open, onOpenChange }: ProfileFormProps) => {
     return (first + last).toUpperCase() || undefined;
   };
 
-  const currentAvatar = avatarPreview || profile?.avatar_url;
+  const currentAvatar = avatarDeleted ? null : (avatarPreview || profile?.avatar_url);
+  const showDeleteButton = !avatarDeleted && (avatarPreview || profile?.avatar_url);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -111,12 +126,24 @@ const ProfileForm = ({ open, onOpenChange }: ProfileFormProps) => {
                 type="file"
                 accept="image/*"
                 onChange={handleAvatarChange}
-                className="hidden"
-              />
+              className="hidden"
+            />
             </div>
-            <p className="text-xs text-muted-foreground">
-              Clicca per cambiare la foto
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-xs text-muted-foreground">
+                Clicca per cambiare la foto
+              </p>
+              {showDeleteButton && (
+                <button
+                  type="button"
+                  onClick={handleDeleteAvatar}
+                  className="text-xs text-destructive hover:underline flex items-center gap-1"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  Rimuovi
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Name fields */}

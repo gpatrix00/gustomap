@@ -100,6 +100,23 @@ export const useProfile = () => {
     return `${publicUrl}?t=${Date.now()}`;
   };
 
+  const deleteAvatar = async () => {
+    if (!user) throw new Error("Utente non autenticato");
+
+    // List and delete all files in the user's avatar folder
+    const { data: files } = await supabase.storage
+      .from("avatars")
+      .list(user.id);
+
+    if (files && files.length > 0) {
+      const filesToDelete = files.map((file) => `${user.id}/${file.name}`);
+      await supabase.storage.from("avatars").remove(filesToDelete);
+    }
+
+    // Update profile to remove avatar_url
+    await updateProfile({ avatar_url: undefined });
+  };
+
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
@@ -109,6 +126,7 @@ export const useProfile = () => {
     loading,
     updateProfile,
     uploadAvatar,
+    deleteAvatar,
     refetch: fetchProfile,
   };
 };
