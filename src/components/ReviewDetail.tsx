@@ -13,6 +13,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import ImageGallery from "./ImageGallery";
+import ShareButton from "./ShareButton";
 
 interface Review {
   id: string;
@@ -23,6 +24,7 @@ interface Review {
   location: string;
   images: string[];
   description: string;
+  isPublic: boolean;
 }
 
 interface ReviewDetailProps {
@@ -31,9 +33,10 @@ interface ReviewDetailProps {
   review: Review | null;
   onEdit: () => void;
   onDelete: () => void;
+  onTogglePublic: (reviewId: string, isPublic: boolean) => Promise<void>;
 }
 
-const ReviewDetail = ({ open, onOpenChange, review, onEdit, onDelete }: ReviewDetailProps) => {
+const ReviewDetail = ({ open, onOpenChange, review, onEdit, onDelete, onTogglePublic }: ReviewDetailProps) => {
   if (!review) return null;
 
   const typeLabels = {
@@ -143,6 +146,12 @@ const ReviewDetail = ({ open, onOpenChange, review, onEdit, onDelete }: ReviewDe
 
             {/* Action Buttons */}
             <div className="flex gap-3 pt-4">
+              <ShareButton
+                reviewId={review.id}
+                reviewName={review.name}
+                isPublic={review.isPublic}
+                onTogglePublic={(isPublic) => onTogglePublic(review.id, isPublic)}
+              />
               <Button
                 onClick={handleEdit}
                 variant="outline"

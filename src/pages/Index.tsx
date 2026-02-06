@@ -127,6 +127,7 @@ const Index = () => {
         image_urls: imageUrls,
         latitude: data.latitude || null,
         longitude: data.longitude || null,
+        is_public: false,
       });
 
       toast.success("Recensione pubblicata!", {
@@ -191,6 +192,19 @@ const Index = () => {
       toast.error("Errore", {
         description: error.message || "Impossibile eliminare la recensione",
       });
+    }
+  };
+
+  const handleTogglePublic = async (reviewId: string, isPublic: boolean) => {
+    try {
+      await updateReview(reviewId, { is_public: isPublic });
+      // Update selected review if it's the one being toggled
+      if (selectedReview?.id === reviewId) {
+        setSelectedReview({ ...selectedReview, is_public: isPublic });
+      }
+    } catch (error: any) {
+      console.error("Error toggling public:", error);
+      throw error;
     }
   };
 
@@ -355,9 +369,11 @@ const Index = () => {
           location: selectedReview.location,
           images: getImageUrls(selectedReview),
           description: selectedReview.description,
+          isPublic: selectedReview.is_public,
         } : null}
         onEdit={() => selectedReview && handleEditReview(selectedReview)}
         onDelete={() => selectedReview && handleDeleteReview(selectedReview.id)}
+        onTogglePublic={handleTogglePublic}
       />
     </div>
   );
