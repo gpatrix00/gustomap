@@ -4,6 +4,7 @@ import StatsBar from "@/components/StatsBar";
 import FilterTabs from "@/components/FilterTabs";
 import ReviewCard from "@/components/ReviewCard";
 import FloatingActionButton from "@/components/FloatingActionButton";
+import AddReviewForm from "@/components/AddReviewForm";
 import { toast } from "sonner";
 
 import restaurant1 from "@/assets/restaurant-1.jpg";
@@ -11,11 +12,12 @@ import bar1 from "@/assets/bar-1.jpg";
 import restaurant2 from "@/assets/restaurant-2.jpg";
 
 type FilterType = "tutti" | "ristoranti" | "bar";
+type PlaceType = "ristorante" | "bar" | "caffetteria";
 
 interface Review {
   id: string;
   name: string;
-  type: "ristorante" | "bar" | "caffetteria";
+  type: PlaceType;
   rating: number;
   date: string;
   location: string;
@@ -23,7 +25,7 @@ interface Review {
   description: string;
 }
 
-const mockReviews: Review[] = [
+const initialReviews: Review[] = [
   {
     id: "1",
     name: "Trattoria del Borgo",
@@ -58,7 +60,8 @@ const mockReviews: Review[] = [
 
 const Index = () => {
   const [filter, setFilter] = useState<FilterType>("tutti");
-  const [reviews] = useState<Review[]>(mockReviews);
+  const [reviews, setReviews] = useState<Review[]>(initialReviews);
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   const filteredReviews = reviews.filter((review) => {
     if (filter === "tutti") return true;
@@ -71,12 +74,31 @@ const Index = () => {
     totalReviews: reviews.length,
     restaurants: reviews.filter((r) => r.type === "ristorante").length,
     bars: reviews.filter((r) => r.type === "bar" || r.type === "caffetteria").length,
-    avgRating: reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length,
+    avgRating: reviews.length > 0 ? reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length : 0,
   };
 
-  const handleAddReview = () => {
-    toast.info("Funzionalità in arrivo!", {
-      description: "Presto potrai aggiungere le tue recensioni.",
+  const handleAddReview = (data: {
+    name: string;
+    type: PlaceType;
+    rating: number;
+    location: string;
+    description: string;
+    image: string | null;
+  }) => {
+    const newReview: Review = {
+      id: Date.now().toString(),
+      name: data.name,
+      type: data.type,
+      rating: data.rating,
+      date: "Adesso",
+      location: data.location,
+      description: data.description,
+      image: data.image || "",
+    };
+
+    setReviews((prev) => [newReview, ...prev]);
+    toast.success("Recensione pubblicata!", {
+      description: `La tua recensione di ${data.name} è stata aggiunta.`,
     });
   };
 
@@ -121,7 +143,13 @@ const Index = () => {
         </div>
       </main>
 
-      <FloatingActionButton onClick={handleAddReview} />
+      <FloatingActionButton onClick={() => setIsFormOpen(true)} />
+      
+      <AddReviewForm
+        open={isFormOpen}
+        onOpenChange={setIsFormOpen}
+        onSubmit={handleAddReview}
+      />
     </div>
   );
 };
