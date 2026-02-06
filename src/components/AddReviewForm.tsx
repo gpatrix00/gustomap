@@ -5,12 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import MultiImageUpload from "./MultiImageUpload";
 
 type PlaceType = "ristorante" | "bar" | "caffetteria";
@@ -132,7 +127,7 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
         setErrors((prev) => ({ ...prev, latitude: "Impossibile ottenere la posizione" }));
         setGettingLocation(false);
       },
-      { enableHighAccuracy: true }
+      { enableHighAccuracy: true },
     );
   };
 
@@ -220,13 +215,6 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
             <SheetTitle className="font-display text-xl">
               {isEditing ? "Modifica Recensione" : "Nuova Recensione"}
             </SheetTitle>
-            <button
-              type="button"
-              onClick={handleClose}
-              className="rounded-full p-2 hover:bg-muted transition-colors"
-            >
-              <X className="w-4 h-4 text-muted-foreground" />
-            </button>
           </div>
         </SheetHeader>
 
@@ -253,16 +241,12 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
                 id="name"
                 placeholder="Es. Trattoria del Borgo"
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, name: e.target.value }))
-                }
+                onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                 className={cn(errors.name && "border-destructive")}
                 maxLength={100}
                 disabled={submitting}
               />
-              {errors.name && (
-                <p className="text-xs text-destructive">{errors.name}</p>
-              )}
+              {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
             </div>
 
             {/* Type Selection */}
@@ -274,31 +258,25 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
                     key={option.value}
                     type="button"
                     disabled={submitting}
-                    onClick={() =>
-                      setFormData((prev) => ({ ...prev, type: option.value }))
-                    }
+                    onClick={() => setFormData((prev) => ({ ...prev, type: option.value }))}
                     className={cn(
                       "flex-1 py-3 px-4 rounded-lg border-2 transition-all duration-200",
                       "flex flex-col items-center gap-1",
                       formData.type === option.value
                         ? "border-primary bg-primary/10"
-                        : "border-border hover:border-muted-foreground"
+                        : "border-border hover:border-muted-foreground",
                     )}
                   >
                     <option.icon
                       className={cn(
                         "w-5 h-5",
-                        formData.type === option.value
-                          ? "text-primary"
-                          : "text-muted-foreground"
+                        formData.type === option.value ? "text-primary" : "text-muted-foreground",
                       )}
                     />
                     <span
                       className={cn(
                         "text-xs font-medium",
-                        formData.type === option.value
-                          ? "text-primary"
-                          : "text-muted-foreground"
+                        formData.type === option.value ? "text-primary" : "text-muted-foreground",
                       )}
                     >
                       {option.label}
@@ -328,7 +306,7 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
                         "px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border",
                         formData.cuisineType === cuisine.value
                           ? "border-primary bg-primary/10 text-primary"
-                          : "border-border text-muted-foreground hover:border-muted-foreground"
+                          : "border-border text-muted-foreground hover:border-muted-foreground",
                       )}
                     >
                       {cuisine.label}
@@ -347,9 +325,7 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
                     key={star}
                     type="button"
                     disabled={submitting}
-                    onClick={() =>
-                      setFormData((prev) => ({ ...prev, rating: star }))
-                    }
+                    onClick={() => setFormData((prev) => ({ ...prev, rating: star }))}
                     onMouseEnter={() => setHoverRating(star)}
                     onMouseLeave={() => setHoverRating(0)}
                     className="p-1 transition-transform hover:scale-110"
@@ -359,15 +335,13 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
                         "w-8 h-8 transition-colors",
                         (hoverRating || formData.rating) >= star
                           ? "fill-primary text-primary"
-                          : "fill-muted text-muted"
+                          : "fill-muted text-muted",
                       )}
                     />
                   </button>
                 ))}
               </div>
-              {errors.rating && (
-                <p className="text-xs text-destructive">{errors.rating}</p>
-              )}
+              {errors.rating && <p className="text-xs text-destructive">{errors.rating}</p>}
             </div>
 
             {/* Location */}
@@ -381,17 +355,13 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
                   id="location"
                   placeholder="Es. Milano Centro"
                   value={formData.location}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, location: e.target.value }))
-                  }
+                  onChange={(e) => setFormData((prev) => ({ ...prev, location: e.target.value }))}
                   className={cn("pl-10", errors.location && "border-destructive")}
                   maxLength={100}
                   disabled={submitting}
                 />
               </div>
-              {errors.location && (
-                <p className="text-xs text-destructive">{errors.location}</p>
-              )}
+              {errors.location && <p className="text-xs text-destructive">{errors.location}</p>}
             </div>
 
             {/* GPS Coordinates */}
@@ -407,11 +377,7 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
                   disabled={submitting || gettingLocation}
                   className="flex-1 gap-2"
                 >
-                  {gettingLocation ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Navigation className="w-4 h-4" />
-                  )}
+                  {gettingLocation ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
                   {hasCoordinates ? "Aggiorna posizione" : "Usa posizione attuale"}
                 </Button>
               </div>
@@ -420,9 +386,7 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
                   📍 {formData.latitude?.toFixed(5)}, {formData.longitude?.toFixed(5)}
                 </p>
               )}
-              {errors.latitude && (
-                <p className="text-xs text-destructive">{errors.latitude}</p>
-              )}
+              {errors.latitude && <p className="text-xs text-destructive">{errors.latitude}</p>}
             </div>
 
             {/* Description */}
@@ -434,22 +398,13 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
                 id="description"
                 placeholder="Racconta la tua esperienza..."
                 value={formData.description}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, description: e.target.value }))
-                }
-                className={cn(
-                  "min-h-[120px] resize-none",
-                  errors.description && "border-destructive"
-                )}
+                onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+                className={cn("min-h-[120px] resize-none", errors.description && "border-destructive")}
                 maxLength={500}
                 disabled={submitting}
               />
               <div className="flex justify-between text-xs text-muted-foreground">
-                {errors.description ? (
-                  <p className="text-destructive">{errors.description}</p>
-                ) : (
-                  <span />
-                )}
+                {errors.description ? <p className="text-destructive">{errors.description}</p> : <span />}
                 <span>{formData.description.length}/500</span>
               </div>
             </div>
