@@ -5,6 +5,7 @@ import FilterTabs from "@/components/FilterTabs";
 import ReviewCard from "@/components/ReviewCard";
 import FloatingActionButton from "@/components/FloatingActionButton";
 import AddReviewForm from "@/components/AddReviewForm";
+import ReviewDetail from "@/components/ReviewDetail";
 import { toast } from "sonner";
 
 import restaurant1 from "@/assets/restaurant-1.jpg";
@@ -34,7 +35,7 @@ const initialReviews: Review[] = [
     date: "2 giorni fa",
     location: "Milano Centro",
     image: restaurant1,
-    description: "Esperienza incredibile. La pasta fatta in casa era semplicemente divina, servizio impeccabile.",
+    description: "Esperienza incredibile. La pasta fatta in casa era semplicemente divina, servizio impeccabile. L'atmosfera era accogliente e intima, perfetta per una cena romantica. Il personale era attento e professionale, consigliando i piatti migliori del menu. Tornerò sicuramente!",
   },
   {
     id: "2",
@@ -44,7 +45,7 @@ const initialReviews: Review[] = [
     date: "1 settimana fa",
     location: "Venezia",
     image: bar1,
-    description: "Atmosfera magica, caffè ottimo. Prezzi un po' alti ma ne vale la pena per l'esperienza.",
+    description: "Atmosfera magica, caffè ottimo. Prezzi un po' alti ma ne vale la pena per l'esperienza. Seduti in Piazza San Marco, con vista sul campanile, ogni sorso di caffè diventa un momento speciale.",
   },
   {
     id: "3",
@@ -54,7 +55,7 @@ const initialReviews: Review[] = [
     date: "2 settimane fa",
     location: "Modena",
     image: restaurant2,
-    description: "Una delle migliori esperienze culinarie della mia vita. Ogni piatto un capolavoro.",
+    description: "Una delle migliori esperienze culinarie della mia vita. Ogni piatto un capolavoro di creatività e gusto. Chef Bottura è un genio assoluto che riesce a trasformare ingredienti semplici in opere d'arte commestibili.",
   },
 ];
 
@@ -62,6 +63,8 @@ const Index = () => {
   const [filter, setFilter] = useState<FilterType>("tutti");
   const [reviews, setReviews] = useState<Review[]>(initialReviews);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedReview, setSelectedReview] = useState<Review | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   const filteredReviews = reviews.filter((review) => {
     if (filter === "tutti") return true;
@@ -102,6 +105,11 @@ const Index = () => {
     });
   };
 
+  const handleReviewClick = (review: Review) => {
+    setSelectedReview(review);
+    setIsDetailOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-background pb-24">
       <Header />
@@ -130,6 +138,7 @@ const Index = () => {
               <ReviewCard
                 key={review.id}
                 {...review}
+                onClick={() => handleReviewClick(review)}
                 className={`animation-delay-${index * 100}`}
               />
             ))
@@ -149,6 +158,12 @@ const Index = () => {
         open={isFormOpen}
         onOpenChange={setIsFormOpen}
         onSubmit={handleAddReview}
+      />
+
+      <ReviewDetail
+        open={isDetailOpen}
+        onOpenChange={setIsDetailOpen}
+        review={selectedReview}
       />
     </div>
   );

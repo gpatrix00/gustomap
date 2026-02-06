@@ -10,6 +10,7 @@ interface ReviewCardProps {
   image: string;
   description: string;
   className?: string;
+  onClick?: () => void;
 }
 
 const ReviewCard = ({
@@ -21,6 +22,7 @@ const ReviewCard = ({
   image,
   description,
   className,
+  onClick,
 }: ReviewCardProps) => {
   const typeLabels = {
     ristorante: "Ristorante",
@@ -30,8 +32,9 @@ const ReviewCard = ({
 
   return (
     <article
+      onClick={onClick}
       className={cn(
-        "group bg-card rounded-lg overflow-hidden shadow-card hover:shadow-elevated transition-all duration-300 animate-fade-in",
+        "group bg-card rounded-lg overflow-hidden shadow-card hover:shadow-elevated transition-all duration-300 animate-fade-in cursor-pointer",
         className
       )}
     >
