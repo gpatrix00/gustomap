@@ -63,7 +63,7 @@ interface AddReviewFormProps {
   onUpdate?: (id: string, data: ReviewFormData) => Promise<void>;
 }
 
-const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }: AddReviewFormProps) => {
+const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }: AddReviewFormProps): React.JSX.Element => {
   const [formData, setFormData] = useState<ReviewFormData>({
     name: "",
     type: "ristorante",
