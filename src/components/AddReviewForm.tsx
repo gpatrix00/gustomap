@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Star, MapPin, Utensils, Coffee, Loader2 } from "lucide-react";
+import { X, Star, MapPin, Utensils, Coffee, Loader2, Navigation } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,8 @@ interface ReviewFormData {
   location: string;
   description: string;
   images: (File | string)[];
+  latitude?: number;
+  longitude?: number;
 }
 
 interface EditingReview {
@@ -32,6 +34,8 @@ interface EditingReview {
   location: string;
   description: string;
   image_urls: string[];
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 interface AddReviewFormProps {
@@ -50,10 +54,13 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
     location: "",
     description: "",
     images: [],
+    latitude: undefined,
+    longitude: undefined,
   });
   const [hoverRating, setHoverRating] = useState(0);
   const [errors, setErrors] = useState<Partial<Record<keyof ReviewFormData, string>>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [gettingLocation, setGettingLocation] = useState(false);
 
   const isEditing = !!editingReview;
 
@@ -66,6 +73,8 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
         location: editingReview.location,
         description: editingReview.description,
         images: editingReview.image_urls || [],
+        latitude: editingReview.latitude || undefined,
+        longitude: editingReview.longitude || undefined,
       });
     } else {
       resetForm();
@@ -77,6 +86,31 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
     { value: "bar", label: "Bar", icon: Coffee },
     { value: "caffetteria", label: "Caffetteria", icon: Coffee },
   ];
+
+  const getCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setErrors((prev) => ({ ...prev, latitude: "Geolocalizzazione non supportata" }));
+      return;
+    }
+
+    setGettingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setFormData((prev) => ({
+          ...prev,
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        }));
+        setGettingLocation(false);
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+        setErrors((prev) => ({ ...prev, latitude: "Impossibile ottenere la posizione" }));
+        setGettingLocation(false);
+      },
+      { enableHighAccuracy: true }
+    );
+  };
 
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof ReviewFormData, string>> = {};
@@ -139,6 +173,8 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
       location: "",
       description: "",
       images: [],
+      latitude: undefined,
+      longitude: undefined,
     });
     setErrors({});
     setHoverRating(0);
@@ -148,6 +184,8 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
     resetForm();
     onOpenChange(false);
   };
+
+  const hasCoordinates = formData.latitude !== undefined && formData.longitude !== undefined;
 
   return (
     <Sheet open={open} onOpenChange={handleClose}>
@@ -298,6 +336,37 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
               </div>
               {errors.location && (
                 <p className="text-xs text-destructive">{errors.location}</p>
+              )}
+            </div>
+
+            {/* GPS Coordinates */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">
+                Coordinate GPS <span className="text-muted-foreground font-normal">(per la mappa)</span>
+              </Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={getCurrentLocation}
+                  disabled={submitting || gettingLocation}
+                  className="flex-1 gap-2"
+                >
+                  {gettingLocation ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Navigation className="w-4 h-4" />
+                  )}
+                  {hasCoordinates ? "Aggiorna posizione" : "Usa posizione attuale"}
+                </Button>
+              </div>
+              {hasCoordinates && (
+                <p className="text-xs text-muted-foreground">
+                  📍 {formData.latitude?.toFixed(5)}, {formData.longitude?.toFixed(5)}
+                </p>
+              )}
+              {errors.latitude && (
+                <p className="text-xs text-destructive">{errors.latitude}</p>
               )}
             </div>
 

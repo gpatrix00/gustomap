@@ -21,7 +21,9 @@ export type Database = {
           id: string
           image_url: string | null
           image_urls: Json | null
+          latitude: number | null
           location: string
+          longitude: number | null
           name: string
           rating: number
           type: string
@@ -34,7 +36,9 @@ export type Database = {
           id?: string
           image_url?: string | null
           image_urls?: Json | null
+          latitude?: number | null
           location: string
+          longitude?: number | null
           name: string
           rating: number
           type: string
@@ -47,7 +51,9 @@ export type Database = {
           id?: string
           image_url?: string | null
           image_urls?: Json | null
+          latitude?: number | null
           location?: string
+          longitude?: number | null
           name?: string
           rating?: number
           type?: string
