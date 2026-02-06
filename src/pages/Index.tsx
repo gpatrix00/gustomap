@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useReviews } from "@/hooks/useReviews";
 import Header from "@/components/Header";
 import StatsBar from "@/components/StatsBar";
 import FilterTabs from "@/components/FilterTabs";
@@ -6,62 +8,20 @@ import ReviewCard from "@/components/ReviewCard";
 import FloatingActionButton from "@/components/FloatingActionButton";
 import AddReviewForm from "@/components/AddReviewForm";
 import ReviewDetail from "@/components/ReviewDetail";
+import AuthForm from "@/components/AuthForm";
 import { toast } from "sonner";
-
-import restaurant1 from "@/assets/restaurant-1.jpg";
-import bar1 from "@/assets/bar-1.jpg";
-import restaurant2 from "@/assets/restaurant-2.jpg";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
+import { Review } from "@/services/reviewsService";
 
 type FilterType = "tutti" | "ristoranti" | "bar";
 type PlaceType = "ristorante" | "bar" | "caffetteria";
 
-interface Review {
-  id: string;
-  name: string;
-  type: PlaceType;
-  rating: number;
-  date: string;
-  location: string;
-  image: string;
-  description: string;
-}
-
-const initialReviews: Review[] = [
-  {
-    id: "1",
-    name: "Trattoria del Borgo",
-    type: "ristorante",
-    rating: 5,
-    date: "2 giorni fa",
-    location: "Milano Centro",
-    image: restaurant1,
-    description: "Esperienza incredibile. La pasta fatta in casa era semplicemente divina, servizio impeccabile. L'atmosfera era accogliente e intima, perfetta per una cena romantica. Il personale era attento e professionale, consigliando i piatti migliori del menu. Tornerò sicuramente!",
-  },
-  {
-    id: "2",
-    name: "Caffè Florian",
-    type: "caffetteria",
-    rating: 4,
-    date: "1 settimana fa",
-    location: "Venezia",
-    image: bar1,
-    description: "Atmosfera magica, caffè ottimo. Prezzi un po' alti ma ne vale la pena per l'esperienza. Seduti in Piazza San Marco, con vista sul campanile, ogni sorso di caffè diventa un momento speciale.",
-  },
-  {
-    id: "3",
-    name: "Osteria Francescana",
-    type: "ristorante",
-    rating: 5,
-    date: "2 settimane fa",
-    location: "Modena",
-    image: restaurant2,
-    description: "Una delle migliori esperienze culinarie della mia vita. Ogni piatto un capolavoro di creatività e gusto. Chef Bottura è un genio assoluto che riesce a trasformare ingredienti semplici in opere d'arte commestibili.",
-  },
-];
-
 const Index = () => {
+  const { user, loading: authLoading, isAuthenticated } = useAuth();
+  const { reviews, loading: reviewsLoading, addReview, updateReview, deleteReview, fetchReviews } = useReviews();
+  
   const [filter, setFilter] = useState<FilterType>("tutti");
-  const [reviews, setReviews] = useState<Review[]>(initialReviews);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedReview, setSelectedReview] = useState<Review | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -81,66 +41,111 @@ const Index = () => {
     avgRating: reviews.length > 0 ? reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length : 0,
   };
 
-  const handleAddReview = (data: {
+  const uploadImage = async (image: File | string | null): Promise<string | null> => {
+    if (!image || typeof image === "string") {
+      return typeof image === "string" ? image : null;
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Utente non autenticato");
+
+    const fileExt = image.name.split(".").pop();
+    const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("review-images")
+      .upload(fileName, image);
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from("review-images")
+      .getPublicUrl(fileName);
+
+    return publicUrl;
+  };
+
+  const handleAddReview = async (data: {
     name: string;
     type: PlaceType;
     rating: number;
     location: string;
     description: string;
-    image: string | null;
+    image: File | string | null;
   }) => {
-    const newReview: Review = {
-      id: Date.now().toString(),
-      name: data.name,
-      type: data.type,
-      rating: data.rating,
-      date: "Adesso",
-      location: data.location,
-      description: data.description,
-      image: data.image || "",
-    };
+    try {
+      const imageUrl = await uploadImage(data.image);
+      
+      await addReview({
+        name: data.name,
+        type: data.type,
+        rating: data.rating,
+        location: data.location,
+        description: data.description,
+        image_url: imageUrl,
+      });
 
-    setReviews((prev) => [newReview, ...prev]);
-    toast.success("Recensione pubblicata!", {
-      description: `La tua recensione di ${data.name} è stata aggiunta.`,
-    });
+      toast.success("Recensione pubblicata!", {
+        description: `La tua recensione di ${data.name} è stata aggiunta.`,
+      });
+    } catch (error: any) {
+      console.error("Error adding review:", error);
+      toast.error("Errore", {
+        description: error.message || "Impossibile pubblicare la recensione",
+      });
+      throw error;
+    }
   };
 
-  const handleUpdateReview = (id: string, data: {
+  const handleUpdateReview = async (id: string, data: {
     name: string;
     type: PlaceType;
     rating: number;
     location: string;
     description: string;
-    image: string | null;
+    image: File | string | null;
   }) => {
-    setReviews((prev) =>
-      prev.map((review) =>
-        review.id === id
-          ? {
-              ...review,
-              name: data.name,
-              type: data.type,
-              rating: data.rating,
-              location: data.location,
-              description: data.description,
-              image: data.image || review.image,
-            }
-          : review
-      )
-    );
-    setEditingReview(null);
-    toast.success("Recensione aggiornata!", {
-      description: `Le modifiche a "${data.name}" sono state salvate.`,
-    });
+    try {
+      let imageUrl = data.image;
+      if (data.image instanceof File) {
+        imageUrl = await uploadImage(data.image);
+      }
+
+      await updateReview(id, {
+        name: data.name,
+        type: data.type,
+        rating: data.rating,
+        location: data.location,
+        description: data.description,
+        image_url: typeof imageUrl === "string" ? imageUrl : null,
+      });
+
+      setEditingReview(null);
+      toast.success("Recensione aggiornata!", {
+        description: `Le modifiche a "${data.name}" sono state salvate.`,
+      });
+    } catch (error: any) {
+      console.error("Error updating review:", error);
+      toast.error("Errore", {
+        description: error.message || "Impossibile aggiornare la recensione",
+      });
+      throw error;
+    }
   };
 
-  const handleDeleteReview = (reviewId: string) => {
-    const reviewName = reviews.find((r) => r.id === reviewId)?.name;
-    setReviews((prev) => prev.filter((review) => review.id !== reviewId));
-    toast.success("Recensione eliminata", {
-      description: `"${reviewName}" è stata rimossa.`,
-    });
+  const handleDeleteReview = async (reviewId: string) => {
+    try {
+      const reviewName = reviews.find((r) => r.id === reviewId)?.name;
+      await deleteReview(reviewId);
+      toast.success("Recensione eliminata", {
+        description: `"${reviewName}" è stata rimossa.`,
+      });
+    } catch (error: any) {
+      console.error("Error deleting review:", error);
+      toast.error("Errore", {
+        description: error.message || "Impossibile eliminare la recensione",
+      });
+    }
   };
 
   const handleEditReview = (review: Review) => {
@@ -159,6 +164,20 @@ const Index = () => {
       setEditingReview(null);
     }
   };
+
+  // Show loading state
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Show auth form if not authenticated
+  if (!isAuthenticated) {
+    return <AuthForm onSuccess={fetchReviews} />;
+  }
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -183,20 +202,40 @@ const Index = () => {
 
         {/* Reviews List */}
         <div className="space-y-4">
-          {filteredReviews.length > 0 ? (
+          {reviewsLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : filteredReviews.length > 0 ? (
             filteredReviews.map((review, index) => (
               <ReviewCard
                 key={review.id}
-                {...review}
+                name={review.name}
+                type={review.type as PlaceType}
+                rating={review.rating}
+                date={new Date(review.created_at).toLocaleDateString("it-IT", {
+                  day: "numeric",
+                  month: "short",
+                })}
+                location={review.location}
+                image={review.image_url || "/placeholder.svg"}
+                description={review.description}
                 onClick={() => handleReviewClick(review)}
                 className={`animation-delay-${index * 100}`}
               />
             ))
           ) : (
-            <div className="text-center py-12">
+            <div className="text-center py-12 space-y-2">
               <p className="text-muted-foreground">
-                Nessuna recensione trovata per questo filtro.
+                {filter === "tutti" 
+                  ? "Non hai ancora aggiunto recensioni."
+                  : "Nessuna recensione trovata per questo filtro."}
               </p>
+              {filter === "tutti" && (
+                <p className="text-sm text-muted-foreground">
+                  Tocca il bottone + per aggiungere la tua prima recensione!
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -208,16 +247,37 @@ const Index = () => {
         open={isFormOpen}
         onOpenChange={handleFormClose}
         onSubmit={handleAddReview}
-        editingReview={editingReview}
+        editingReview={editingReview ? {
+          id: editingReview.id,
+          name: editingReview.name,
+          type: editingReview.type as PlaceType,
+          rating: editingReview.rating,
+          location: editingReview.location,
+          description: editingReview.description,
+          image_url: editingReview.image_url,
+        } : null}
         onUpdate={handleUpdateReview}
       />
 
       <ReviewDetail
         open={isDetailOpen}
         onOpenChange={setIsDetailOpen}
-        review={selectedReview}
-        onEdit={handleEditReview}
-        onDelete={handleDeleteReview}
+        review={selectedReview ? {
+          id: selectedReview.id,
+          name: selectedReview.name,
+          type: selectedReview.type as PlaceType,
+          rating: selectedReview.rating,
+          date: new Date(selectedReview.created_at).toLocaleDateString("it-IT", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          }),
+          location: selectedReview.location,
+          image: selectedReview.image_url || "/placeholder.svg",
+          description: selectedReview.description,
+        } : null}
+        onEdit={() => selectedReview && handleEditReview(selectedReview)}
+        onDelete={() => selectedReview && handleDeleteReview(selectedReview.id)}
       />
     </div>
   );

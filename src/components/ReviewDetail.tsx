@@ -28,8 +28,8 @@ interface ReviewDetailProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   review: Review | null;
-  onEdit: (review: Review) => void;
-  onDelete: (reviewId: string) => void;
+  onEdit: () => void;
+  onDelete: () => void;
 }
 
 const ReviewDetail = ({ open, onOpenChange, review, onEdit, onDelete }: ReviewDetailProps) => {
@@ -43,11 +43,11 @@ const ReviewDetail = ({ open, onOpenChange, review, onEdit, onDelete }: ReviewDe
 
   const handleEdit = () => {
     onOpenChange(false);
-    onEdit(review);
+    onEdit();
   };
 
   const handleDelete = () => {
-    onDelete(review.id);
+    onDelete();
     onOpenChange(false);
   };
 

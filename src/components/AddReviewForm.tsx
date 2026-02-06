@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { X, Star, Camera, MapPin, Utensils, Coffee } from "lucide-react";
+import { X, Star, Camera, MapPin, Utensils, Coffee, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { supabase } from "@/integrations/supabase/client";
 
 type PlaceType = "ristorante" | "bar" | "caffetteria";
 
@@ -20,7 +21,7 @@ interface ReviewFormData {
   rating: number;
   location: string;
   description: string;
-  image: string | null;
+  image: File | string | null;
 }
 
 interface EditingReview {
@@ -30,15 +31,15 @@ interface EditingReview {
   rating: number;
   location: string;
   description: string;
-  image: string;
+  image_url: string | null;
 }
 
 interface AddReviewFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: ReviewFormData) => void;
+  onSubmit: (data: ReviewFormData) => Promise<void>;
   editingReview?: EditingReview | null;
-  onUpdate?: (id: string, data: ReviewFormData) => void;
+  onUpdate?: (id: string, data: ReviewFormData) => Promise<void>;
 }
 
 const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }: AddReviewFormProps) => {
@@ -51,8 +52,10 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
     description: "",
     image: null,
   });
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [hoverRating, setHoverRating] = useState(0);
   const [errors, setErrors] = useState<Partial<Record<keyof ReviewFormData, string>>>({});
+  const [submitting, setSubmitting] = useState(false);
 
   const isEditing = !!editingReview;
 
@@ -60,12 +63,13 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
     if (editingReview) {
       setFormData({
         name: editingReview.name,
-        type: editingReview.type,
+        type: editingReview.type as PlaceType,
         rating: editingReview.rating,
         location: editingReview.location,
         description: editingReview.description,
-        image: editingReview.image,
+        image: editingReview.image_url,
       });
+      setImagePreview(editingReview.image_url);
     } else {
       resetForm();
     }
@@ -84,10 +88,12 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
         setErrors((prev) => ({ ...prev, image: "Immagine troppo grande (max 5MB)" }));
         return;
       }
+      setFormData((prev) => ({ ...prev, image: file }));
+      setErrors((prev) => ({ ...prev, image: undefined }));
+      
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData((prev) => ({ ...prev, image: reader.result as string }));
-        setErrors((prev) => ({ ...prev, image: undefined }));
+        setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
@@ -118,7 +124,7 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
       newErrors.description = "La descrizione deve essere inferiore a 500 caratteri";
     }
 
-    if (!formData.image) {
+    if (!formData.image && !isEditing) {
       newErrors.image = "Aggiungi una foto";
     }
 
@@ -126,16 +132,23 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
+    if (!validateForm()) return;
+
+    setSubmitting(true);
+    try {
       if (isEditing && editingReview && onUpdate) {
-        onUpdate(editingReview.id, formData);
+        await onUpdate(editingReview.id, formData);
       } else {
-        onSubmit(formData);
+        await onSubmit(formData);
       }
       resetForm();
       onOpenChange(false);
+    } catch (error) {
+      console.error("Error submitting form:", error);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -148,6 +161,7 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
       description: "",
       image: null,
     });
+    setImagePreview(null);
     setErrors({});
     setHoverRating(0);
   };
@@ -168,6 +182,7 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
             <button
               onClick={handleClose}
               className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center hover:bg-muted transition-colors"
+              disabled={submitting}
             >
               <X className="w-4 h-4 text-muted-foreground" />
             </button>
@@ -189,18 +204,19 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
+                disabled={submitting}
                 className={cn(
                   "w-full h-48 rounded-lg border-2 border-dashed transition-all duration-200",
                   "flex flex-col items-center justify-center gap-2",
-                  formData.image
+                  imagePreview
                     ? "border-transparent overflow-hidden"
                     : "border-border hover:border-primary hover:bg-primary/5",
                   errors.image && "border-destructive"
                 )}
               >
-                {formData.image ? (
+                {imagePreview ? (
                   <img
-                    src={formData.image}
+                    src={imagePreview}
                     alt="Preview"
                     className="w-full h-full object-cover"
                   />
@@ -232,6 +248,7 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
                 }
                 className={cn(errors.name && "border-destructive")}
                 maxLength={100}
+                disabled={submitting}
               />
               {errors.name && (
                 <p className="text-xs text-destructive">{errors.name}</p>
@@ -246,6 +263,7 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
                   <button
                     key={option.value}
                     type="button"
+                    disabled={submitting}
                     onClick={() =>
                       setFormData((prev) => ({ ...prev, type: option.value }))
                     }
@@ -288,6 +306,7 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
                   <button
                     key={star}
                     type="button"
+                    disabled={submitting}
                     onClick={() =>
                       setFormData((prev) => ({ ...prev, rating: star }))
                     }
@@ -327,6 +346,7 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
                   }
                   className={cn("pl-10", errors.location && "border-destructive")}
                   maxLength={100}
+                  disabled={submitting}
                 />
               </div>
               {errors.location && (
@@ -351,6 +371,7 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
                   errors.description && "border-destructive"
                 )}
                 maxLength={500}
+                disabled={submitting}
               />
               <div className="flex justify-between text-xs text-muted-foreground">
                 {errors.description ? (
@@ -368,8 +389,15 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
             <Button
               type="submit"
               className="w-full h-12 text-base font-medium bg-primary hover:bg-primary/90"
+              disabled={submitting}
             >
-              {isEditing ? "Salva Modifiche" : "Pubblica Recensione"}
+              {submitting ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : isEditing ? (
+                "Salva Modifiche"
+              ) : (
+                "Pubblica Recensione"
+              )}
             </Button>
           </div>
         </form>
