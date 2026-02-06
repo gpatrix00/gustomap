@@ -65,6 +65,7 @@ const Index = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedReview, setSelectedReview] = useState<Review | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [editingReview, setEditingReview] = useState<Review | null>(null);
 
   const filteredReviews = reviews.filter((review) => {
     if (filter === "tutti") return true;
@@ -105,9 +106,58 @@ const Index = () => {
     });
   };
 
+  const handleUpdateReview = (id: string, data: {
+    name: string;
+    type: PlaceType;
+    rating: number;
+    location: string;
+    description: string;
+    image: string | null;
+  }) => {
+    setReviews((prev) =>
+      prev.map((review) =>
+        review.id === id
+          ? {
+              ...review,
+              name: data.name,
+              type: data.type,
+              rating: data.rating,
+              location: data.location,
+              description: data.description,
+              image: data.image || review.image,
+            }
+          : review
+      )
+    );
+    setEditingReview(null);
+    toast.success("Recensione aggiornata!", {
+      description: `Le modifiche a "${data.name}" sono state salvate.`,
+    });
+  };
+
+  const handleDeleteReview = (reviewId: string) => {
+    const reviewName = reviews.find((r) => r.id === reviewId)?.name;
+    setReviews((prev) => prev.filter((review) => review.id !== reviewId));
+    toast.success("Recensione eliminata", {
+      description: `"${reviewName}" è stata rimossa.`,
+    });
+  };
+
+  const handleEditReview = (review: Review) => {
+    setEditingReview(review);
+    setIsFormOpen(true);
+  };
+
   const handleReviewClick = (review: Review) => {
     setSelectedReview(review);
     setIsDetailOpen(true);
+  };
+
+  const handleFormClose = (open: boolean) => {
+    setIsFormOpen(open);
+    if (!open) {
+      setEditingReview(null);
+    }
   };
 
   return (
@@ -156,14 +206,18 @@ const Index = () => {
       
       <AddReviewForm
         open={isFormOpen}
-        onOpenChange={setIsFormOpen}
+        onOpenChange={handleFormClose}
         onSubmit={handleAddReview}
+        editingReview={editingReview}
+        onUpdate={handleUpdateReview}
       />
 
       <ReviewDetail
         open={isDetailOpen}
         onOpenChange={setIsDetailOpen}
         review={selectedReview}
+        onEdit={handleEditReview}
+        onDelete={handleDeleteReview}
       />
     </div>
   );
