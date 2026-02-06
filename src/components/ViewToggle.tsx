@@ -10,7 +10,7 @@ interface ViewToggleProps {
 
 const ViewToggle = ({ mode, onChange }: ViewToggleProps) => {
   return (
-    <div className="flex bg-secondary rounded-full p-1">
+    <div className="inline-flex bg-secondary rounded-full p-0.5">
       <button
         onClick={() => onChange("list")}
         className={cn(
