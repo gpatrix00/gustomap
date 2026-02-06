@@ -289,7 +289,10 @@ const Index = () => {
             }))}
             onReviewClick={(id) => {
               const review = reviews.find((r) => r.id === id);
-              if (review) handleReviewClick(review);
+              if (review) {
+                setViewMode("list");
+                handleReviewClick(review);
+              }
             }}
             className="h-[60vh] min-h-[400px]"
           />
