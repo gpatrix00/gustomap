@@ -15,6 +15,26 @@ import MultiImageUpload from "./MultiImageUpload";
 
 type PlaceType = "ristorante" | "bar" | "caffetteria";
 
+const CUISINE_TYPES = [
+  { value: "italiana", label: "Italiana" },
+  { value: "giapponese", label: "Giapponese" },
+  { value: "cinese", label: "Cinese" },
+  { value: "messicana", label: "Messicana" },
+  { value: "indiana", label: "Indiana" },
+  { value: "thailandese", label: "Thailandese" },
+  { value: "americana", label: "Americana" },
+  { value: "francese", label: "Francese" },
+  { value: "greca", label: "Greca" },
+  { value: "spagnola", label: "Spagnola" },
+  { value: "mediterranea", label: "Mediterranea" },
+  { value: "pizza", label: "Pizzeria" },
+  { value: "sushi", label: "Sushi" },
+  { value: "steakhouse", label: "Steakhouse" },
+  { value: "pesce", label: "Pesce" },
+  { value: "vegetariana", label: "Vegetariana" },
+  { value: "altro", label: "Altro" },
+] as const;
+
 interface ReviewFormData {
   name: string;
   type: PlaceType;
@@ -24,6 +44,7 @@ interface ReviewFormData {
   images: (File | string)[];
   latitude?: number;
   longitude?: number;
+  cuisineType?: string;
 }
 
 interface EditingReview {
@@ -36,6 +57,7 @@ interface EditingReview {
   image_urls: string[];
   latitude?: number | null;
   longitude?: number | null;
+  cuisine_type?: string | null;
 }
 
 interface AddReviewFormProps {
@@ -56,6 +78,7 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
     images: [],
     latitude: undefined,
     longitude: undefined,
+    cuisineType: undefined,
   });
   const [hoverRating, setHoverRating] = useState(0);
   const [errors, setErrors] = useState<Partial<Record<keyof ReviewFormData, string>>>({});
@@ -75,6 +98,7 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
         images: editingReview.image_urls || [],
         latitude: editingReview.latitude || undefined,
         longitude: editingReview.longitude || undefined,
+        cuisineType: editingReview.cuisine_type || undefined,
       });
     } else {
       resetForm();
@@ -175,6 +199,7 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
       images: [],
       latitude: undefined,
       longitude: undefined,
+      cuisineType: undefined,
     });
     setErrors({});
     setHoverRating(0);
@@ -282,6 +307,36 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
                 ))}
               </div>
             </div>
+
+            {/* Cuisine Type - Only for restaurants */}
+            {formData.type === "ristorante" && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Tipo di cucina</Label>
+                <div className="flex flex-wrap gap-2">
+                  {CUISINE_TYPES.map((cuisine) => (
+                    <button
+                      key={cuisine.value}
+                      type="button"
+                      disabled={submitting}
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          cuisineType: prev.cuisineType === cuisine.value ? undefined : cuisine.value,
+                        }))
+                      }
+                      className={cn(
+                        "px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border",
+                        formData.cuisineType === cuisine.value
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border text-muted-foreground hover:border-muted-foreground"
+                      )}
+                    >
+                      {cuisine.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Rating */}
             <div className="space-y-2">

@@ -47,6 +47,7 @@ export type Database = {
       reviews: {
         Row: {
           created_at: string
+          cuisine_type: string | null
           description: string
           id: string
           image_url: string | null
@@ -63,6 +64,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          cuisine_type?: string | null
           description: string
           id?: string
           image_url?: string | null
@@ -79,6 +81,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          cuisine_type?: string | null
           description?: string
           id?: string
           image_url?: string | null

@@ -25,6 +25,7 @@ interface Review {
   images: string[];
   description: string;
   isPublic: boolean;
+  cuisineType?: string | null;
 }
 
 interface ReviewDetailProps {
@@ -43,6 +44,26 @@ const ReviewDetail = ({ open, onOpenChange, review, onEdit, onDelete, onTogglePu
     ristorante: "Ristorante",
     bar: "Bar",
     caffetteria: "Caffetteria",
+  };
+
+  const cuisineLabels: Record<string, string> = {
+    italiana: "Italiana",
+    giapponese: "Giapponese",
+    cinese: "Cinese",
+    messicana: "Messicana",
+    indiana: "Indiana",
+    thailandese: "Thailandese",
+    americana: "Americana",
+    francese: "Francese",
+    greca: "Greca",
+    spagnola: "Spagnola",
+    mediterranea: "Mediterranea",
+    pizza: "Pizzeria",
+    sushi: "Sushi",
+    steakhouse: "Steakhouse",
+    pesce: "Pesce",
+    vegetariana: "Vegetariana",
+    altro: "Altro",
   };
 
   const handleEdit = () => {
@@ -77,11 +98,16 @@ const ReviewDetail = ({ open, onOpenChange, review, onEdit, onDelete, onTogglePu
               <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
 
-            {/* Type Badge */}
-            <div className="absolute top-4 right-4 z-10">
+            {/* Type & Cuisine Badges */}
+            <div className="absolute top-4 right-4 z-10 flex gap-2">
               <span className="px-3 py-1.5 bg-background/80 backdrop-blur-sm text-sm font-medium rounded-full text-foreground">
                 {typeLabels[review.type]}
               </span>
+              {review.cuisineType && cuisineLabels[review.cuisineType] && (
+                <span className="px-3 py-1.5 bg-primary/90 backdrop-blur-sm text-sm font-medium rounded-full text-primary-foreground">
+                  {cuisineLabels[review.cuisineType]}
+                </span>
+              )}
             </div>
 
             {/* Photo Count */}
