@@ -78,6 +78,34 @@ const FitBounds = ({ reviews }: { reviews: ReviewLocation[] }) => {
   return null;
 };
 
+// Popup content component to avoid context consumer issues
+const PopupContent = ({ review }: { review: ReviewLocation }) => (
+  <div className="min-w-[200px]">
+    {review.image && (
+      <img
+        src={review.image}
+        alt={review.name}
+        className="w-full h-24 object-cover rounded-t -mt-3 -mx-3 mb-2"
+        style={{ width: "calc(100% + 24px)" }}
+      />
+    )}
+    <h3 className="font-semibold text-sm">{review.name}</h3>
+    <p className="text-xs text-gray-500 mb-1">{review.location}</p>
+    <div className="flex items-center gap-1">
+      {[...Array(5)].map((_, i) => (
+        <Star
+          key={i}
+          className={`w-3 h-3 ${
+            i < review.rating
+              ? "fill-amber-500 text-amber-500"
+              : "fill-gray-200 text-gray-200"
+          }`}
+        />
+      ))}
+    </div>
+  </div>
+);
+
 const MapView = ({ reviews, onReviewClick, className }: MapViewProps) => {
   const validReviews = reviews.filter((r) => r.latitude && r.longitude);
   
@@ -128,30 +156,7 @@ const MapView = ({ reviews, onReviewClick, className }: MapViewProps) => {
             }}
           >
             <Popup>
-              <div className="min-w-[200px]">
-                {review.image && (
-                  <img
-                    src={review.image}
-                    alt={review.name}
-                    className="w-full h-24 object-cover rounded-t -mt-3 -mx-3 mb-2"
-                    style={{ width: "calc(100% + 24px)" }}
-                  />
-                )}
-                <h3 className="font-semibold text-sm">{review.name}</h3>
-                <p className="text-xs text-gray-500 mb-1">{review.location}</p>
-                <div className="flex items-center gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`w-3 h-3 ${
-                        i < review.rating
-                          ? "fill-amber-500 text-amber-500"
-                          : "fill-gray-200 text-gray-200"
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
+              <PopupContent review={review} />
             </Popup>
           </Marker>
         ))}
