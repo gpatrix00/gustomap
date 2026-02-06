@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -15,21 +15,24 @@ interface ProfileFormProps {
 
 const ProfileForm = ({ open, onOpenChange }: ProfileFormProps) => {
   const { profile, updateProfile, uploadAvatar, deleteAvatar, refetch } = useProfile();
-  const [firstName, setFirstName] = useState(profile?.first_name || "");
-  const [lastName, setLastName] = useState(profile?.last_name || "");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarDeleted, setAvatarDeleted] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Update form when profile changes
-  useState(() => {
-    if (profile) {
+  // Sync form with profile data when dialog opens or profile changes
+  useEffect(() => {
+    if (open && profile) {
       setFirstName(profile.first_name || "");
       setLastName(profile.last_name || "");
+      setAvatarPreview(null);
+      setAvatarDeleted(false);
+      setAvatarFile(null);
     }
-  });
+  }, [open, profile]);
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
