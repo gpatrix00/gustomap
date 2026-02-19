@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { X, Star, MapPin, Utensils, Coffee, Loader2, Navigation } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { X, Star, MapPin, Utensils, Coffee, Loader2, Navigation, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import MultiImageUpload from "./MultiImageUpload";
+import { supabase } from "@/integrations/supabase/client";
 
 type PlaceType = "ristorante" | "bar" | "caffetteria";
 
@@ -63,6 +64,16 @@ interface AddReviewFormProps {
   onUpdate?: (id: string, data: ReviewFormData) => Promise<void>;
 }
 
+interface PlaceResult {
+  placeId: string;
+  name: string;
+  address: string;
+  latitude?: number;
+  longitude?: number;
+  type: string;
+  primaryType: string;
+}
+
 const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }: AddReviewFormProps): React.JSX.Element => {
   const [formData, setFormData] = useState<ReviewFormData>({
     name: "",
@@ -80,6 +91,14 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
   const [submitting, setSubmitting] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
 
+  // Place search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<PlaceResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
+
   const isEditing = !!editingReview;
 
   useEffect(() => {
@@ -95,10 +114,78 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
         longitude: editingReview.longitude || undefined,
         cuisineType: editingReview.cuisine_type || undefined,
       });
+      setSearchQuery(editingReview.name);
     } else {
       resetForm();
+      setSearchQuery("");
     }
   }, [editingReview, open]);
+
+  // Debounced search
+  const searchPlaces = useCallback(async (query: string) => {
+    if (query.length < 2) {
+      setSearchResults([]);
+      setShowResults(false);
+      return;
+    }
+
+    setSearching(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('google-places-search', {
+        body: { query },
+      });
+
+      if (error) {
+        console.error('Places search error:', error);
+        setSearchResults([]);
+      } else if (data?.success) {
+        setSearchResults(data.results || []);
+        setShowResults(true);
+      }
+    } catch (err) {
+      console.error('Places search error:', err);
+    } finally {
+      setSearching(false);
+    }
+  }, []);
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setFormData((prev) => ({ ...prev, name: value }));
+
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      searchPlaces(value);
+    }, 400);
+  };
+
+  const handleSelectPlace = (place: PlaceResult) => {
+    setFormData((prev) => ({
+      ...prev,
+      name: place.name,
+      location: place.address,
+      latitude: place.latitude,
+      longitude: place.longitude,
+      type: place.type as PlaceType,
+    }));
+    setSearchQuery(place.name);
+    setShowResults(false);
+    setSearchResults([]);
+  };
+
+  // Close results when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (resultsRef.current && !resultsRef.current.contains(e.target as Node)) {
+        setShowResults(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const typeOptions: { value: PlaceType; label: string; icon: typeof Utensils }[] = [
     { value: "ristorante", label: "Ristorante", icon: Utensils },
@@ -198,6 +285,9 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
     });
     setErrors({});
     setHoverRating(0);
+    setSearchQuery("");
+    setSearchResults([]);
+    setShowResults(false);
   };
 
   const handleClose = () => {
@@ -232,20 +322,51 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
               />
             </div>
 
-            {/* Name */}
+            {/* Name with Place Search */}
             <div className="space-y-2">
               <Label htmlFor="name" className="text-sm font-medium">
-                Nome del locale
+                Cerca locale
               </Label>
-              <Input
-                id="name"
-                placeholder="Es. Trattoria del Borgo"
-                value={formData.name}
-                onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                className={cn(errors.name && "border-destructive")}
-                maxLength={100}
-                disabled={submitting}
-              />
+              <div className="relative" ref={resultsRef}>
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+                <Input
+                  id="name"
+                  placeholder="Cerca ristorante, bar, hotel..."
+                  value={searchQuery}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  onFocus={() => searchResults.length > 0 && setShowResults(true)}
+                  className={cn("pl-10 pr-10", errors.name && "border-destructive")}
+                  maxLength={100}
+                  disabled={submitting}
+                  autoComplete="off"
+                />
+                {searching && (
+                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+                )}
+
+                {/* Search Results Dropdown */}
+                {showResults && searchResults.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                    {searchResults.map((place) => (
+                      <button
+                        key={place.placeId}
+                        type="button"
+                        onClick={() => handleSelectPlace(place)}
+                        className="w-full text-left px-4 py-3 hover:bg-secondary transition-colors border-b border-border last:border-b-0 flex items-start gap-3"
+                      >
+                        <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{place.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{place.address}</p>
+                          {place.primaryType && (
+                            <span className="text-xs text-primary/70">{place.primaryType}</span>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
             </div>
 
