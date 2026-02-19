@@ -1,4 +1,4 @@
-import { Star, MapPin, Clock, ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { Star, MapPin, Clock, ArrowLeft, Pencil, Trash2, Euro } from "lucide-react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +26,12 @@ interface Review {
   description: string;
   isPublic: boolean;
   cuisineType?: string | null;
+  visitStatus?: string | null;
+  visitDate?: string | null;
+  avgPricePerPerson?: number | null;
+  city?: string | null;
+  province?: string | null;
+  region?: string | null;
 }
 
 interface ReviewDetailProps {
@@ -76,6 +82,8 @@ const ReviewDetail = ({ open, onOpenChange, review, onEdit, onDelete, onTogglePu
     onOpenChange(false);
   };
 
+  const isWishlist = review.visitStatus === "wishlist";
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent 
@@ -87,10 +95,8 @@ const ReviewDetail = ({ open, onOpenChange, review, onEdit, onDelete, onTogglePu
           <div className="relative h-[45vh] min-h-[300px]">
             <ImageGallery images={review.images} className="h-full" />
             
-            {/* Gradient Overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent pointer-events-none" />
             
-            {/* Back Button */}
             <button
               onClick={() => onOpenChange(false)}
               className="absolute top-4 left-4 w-10 h-10 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors shadow-soft z-10"
@@ -98,11 +104,16 @@ const ReviewDetail = ({ open, onOpenChange, review, onEdit, onDelete, onTogglePu
               <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
 
-            {/* Type & Cuisine Badges */}
             <div className="absolute top-4 right-4 z-10 flex gap-2">
-              <span className="px-3 py-1.5 bg-background/80 backdrop-blur-sm text-sm font-medium rounded-full text-foreground">
-                {typeLabels[review.type]}
-              </span>
+              {isWishlist ? (
+                <span className="px-3 py-1.5 bg-accent/90 backdrop-blur-sm text-sm font-medium rounded-full text-accent-foreground">
+                  📌 Da provare
+                </span>
+              ) : (
+                <span className="px-3 py-1.5 bg-background/80 backdrop-blur-sm text-sm font-medium rounded-full text-foreground">
+                  {typeLabels[review.type]}
+                </span>
+              )}
               {review.cuisineType && cuisineLabels[review.cuisineType] && (
                 <span className="px-3 py-1.5 bg-primary/90 backdrop-blur-sm text-sm font-medium rounded-full text-primary-foreground">
                   {cuisineLabels[review.cuisineType]}
@@ -110,7 +121,6 @@ const ReviewDetail = ({ open, onOpenChange, review, onEdit, onDelete, onTogglePu
               )}
             </div>
 
-            {/* Photo Count */}
             {review.images.length > 1 && (
               <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
                 <span className="px-2 py-1 bg-background/80 backdrop-blur-sm text-xs font-medium rounded-full text-foreground">
@@ -122,53 +132,81 @@ const ReviewDetail = ({ open, onOpenChange, review, onEdit, onDelete, onTogglePu
 
           {/* Content */}
           <div className="flex-1 px-6 py-6 -mt-8 relative space-y-6 overflow-y-auto">
-            {/* Header */}
             <div className="space-y-3">
               <h1 className="font-display text-2xl font-semibold text-foreground leading-tight">
                 {review.name}
               </h1>
               
-              {/* Rating */}
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`w-5 h-5 ${
-                        i < review.rating
-                          ? "fill-primary text-primary"
-                          : "fill-muted text-muted"
-                      }`}
-                    />
-                  ))}
+              {!isWishlist && (
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`w-5 h-5 ${
+                          i < review.rating
+                            ? "fill-primary text-primary"
+                            : "fill-muted text-muted"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-lg font-display font-semibold text-foreground">
+                    {review.rating}.0
+                  </span>
                 </div>
-                <span className="text-lg font-display font-semibold text-foreground">
-                  {review.rating}.0
-                </span>
-              </div>
+              )}
             </div>
 
             {/* Meta Info */}
-            <div className="flex items-center gap-6 py-4 border-y border-border">
+            <div className="flex flex-wrap items-center gap-4 py-4 border-y border-border">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <MapPin className="w-4 h-4" />
                 <span className="text-sm">{review.location}</span>
               </div>
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Clock className="w-4 h-4" />
-                <span className="text-sm">{review.date}</span>
+                <span className="text-sm">
+                  {review.visitDate 
+                    ? new Date(review.visitDate).toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric" })
+                    : review.date
+                  }
+                </span>
               </div>
+              {review.avgPricePerPerson != null && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Euro className="w-4 h-4" />
+                  <span className="text-sm">{review.avgPricePerPerson}€ a persona</span>
+                </div>
+              )}
             </div>
 
+            {/* Location tags */}
+            {(review.city || review.province || review.region) && (
+              <div className="flex flex-wrap gap-2">
+                {review.city && (
+                  <span className="px-2.5 py-1 text-xs bg-secondary rounded-full text-muted-foreground">{review.city}</span>
+                )}
+                {review.province && (
+                  <span className="px-2.5 py-1 text-xs bg-secondary rounded-full text-muted-foreground">{review.province}</span>
+                )}
+                {review.region && (
+                  <span className="px-2.5 py-1 text-xs bg-secondary rounded-full text-muted-foreground">{review.region}</span>
+                )}
+              </div>
+            )}
+
             {/* Description */}
-            <div className="space-y-3">
-              <h2 className="font-display text-lg font-medium text-foreground">
-                La mia esperienza
-              </h2>
-              <p className="text-muted-foreground font-body leading-relaxed">
-                {review.description}
-              </p>
-            </div>
+            {review.description && (
+              <div className="space-y-3">
+                <h2 className="font-display text-lg font-medium text-foreground">
+                  {isWishlist ? "Note" : "La mia esperienza"}
+                </h2>
+                <p className="text-muted-foreground font-body leading-relaxed">
+                  {review.description}
+                </p>
+              </div>
+            )}
 
             {/* Action Buttons */}
             <div className="flex gap-3 pt-4">
