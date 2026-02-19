@@ -1,15 +1,20 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { X, Star, MapPin, Utensils, Coffee, Loader2, Navigation, Search } from "lucide-react";
+import { X, Star, MapPin, Utensils, Coffee, Loader2, Navigation, Search, CalendarIcon, Euro } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import MultiImageUpload from "./MultiImageUpload";
 import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+import { it } from "date-fns/locale";
 
 type PlaceType = "ristorante" | "bar" | "caffetteria";
+type VisitStatus = "visited" | "wishlist";
 
 const CUISINE_TYPES = [
   { value: "italiana", label: "Italiana" },
@@ -41,6 +46,13 @@ interface ReviewFormData {
   latitude?: number;
   longitude?: number;
   cuisineType?: string;
+  visitStatus: VisitStatus;
+  visitDate?: Date;
+  avgPricePerPerson?: number;
+  city?: string;
+  province?: string;
+  region?: string;
+  googlePhotoUrl?: string;
 }
 
 interface EditingReview {
@@ -54,6 +66,13 @@ interface EditingReview {
   latitude?: number | null;
   longitude?: number | null;
   cuisine_type?: string | null;
+  visit_status?: string | null;
+  visit_date?: string | null;
+  avg_price_per_person?: number | null;
+  city?: string | null;
+  province?: string | null;
+  region?: string | null;
+  google_photo_url?: string | null;
 }
 
 interface AddReviewFormProps {
@@ -72,6 +91,10 @@ interface PlaceResult {
   longitude?: number;
   type: string;
   primaryType: string;
+  city?: string;
+  province?: string;
+  region?: string;
+  photoUrl?: string;
 }
 
 const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }: AddReviewFormProps): React.JSX.Element => {
@@ -85,9 +108,16 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
     latitude: undefined,
     longitude: undefined,
     cuisineType: undefined,
+    visitStatus: "visited",
+    visitDate: new Date(),
+    avgPricePerPerson: undefined,
+    city: undefined,
+    province: undefined,
+    region: undefined,
+    googlePhotoUrl: undefined,
   });
   const [hoverRating, setHoverRating] = useState(0);
-  const [errors, setErrors] = useState<Partial<Record<keyof ReviewFormData, string>>>({});
+  const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
 
@@ -113,6 +143,13 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
         latitude: editingReview.latitude || undefined,
         longitude: editingReview.longitude || undefined,
         cuisineType: editingReview.cuisine_type || undefined,
+        visitStatus: (editingReview.visit_status as VisitStatus) || "visited",
+        visitDate: editingReview.visit_date ? new Date(editingReview.visit_date) : new Date(),
+        avgPricePerPerson: editingReview.avg_price_per_person || undefined,
+        city: editingReview.city || undefined,
+        province: editingReview.province || undefined,
+        region: editingReview.region || undefined,
+        googlePhotoUrl: editingReview.google_photo_url || undefined,
       });
       setSearchQuery(editingReview.name);
     } else {
@@ -170,6 +207,10 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
       latitude: place.latitude,
       longitude: place.longitude,
       type: place.type as PlaceType,
+      city: place.city,
+      province: place.province,
+      region: place.region,
+      googlePhotoUrl: place.photoUrl,
     }));
     setSearchQuery(place.name);
     setShowResults(false);
@@ -219,7 +260,7 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
   };
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<Record<keyof ReviewFormData, string>> = {};
+    const newErrors: Partial<Record<string, string>> = {};
 
     if (!formData.name.trim()) {
       newErrors.name = "Il nome è obbligatorio";
@@ -227,7 +268,7 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
       newErrors.name = "Il nome deve essere inferiore a 100 caratteri";
     }
 
-    if (formData.rating === 0) {
+    if (formData.visitStatus === "visited" && formData.rating === 0) {
       newErrors.rating = "Seleziona una valutazione";
     }
 
@@ -237,14 +278,10 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
       newErrors.location = "La posizione deve essere inferiore a 100 caratteri";
     }
 
-    if (!formData.description.trim()) {
-      newErrors.description = "La descrizione è obbligatoria";
+    if (formData.visitStatus === "visited" && !formData.description.trim()) {
+      newErrors.description = "La descrizione è obbligatoria per i locali visitati";
     } else if (formData.description.length > 500) {
       newErrors.description = "La descrizione deve essere inferiore a 500 caratteri";
-    }
-
-    if (formData.images.length === 0 && !isEditing) {
-      newErrors.images = "Aggiungi almeno una foto";
     }
 
     setErrors(newErrors);
@@ -282,6 +319,13 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
       latitude: undefined,
       longitude: undefined,
       cuisineType: undefined,
+      visitStatus: "visited",
+      visitDate: new Date(),
+      avgPricePerPerson: undefined,
+      city: undefined,
+      province: undefined,
+      region: undefined,
+      googlePhotoUrl: undefined,
     });
     setErrors({});
     setHoverRating(0);
@@ -303,23 +347,45 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
         <SheetHeader className="px-6 pb-4 border-b border-border">
           <div className="flex items-center justify-between">
             <SheetTitle className="font-display text-xl">
-              {isEditing ? "Modifica Recensione" : "Nuova Recensione"}
+              {isEditing ? "Modifica Recensione" : "Nuovo Locale"}
             </SheetTitle>
           </div>
         </SheetHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col h-[calc(100%-80px)]">
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
-            {/* Photo Upload */}
+
+            {/* Visit Status Toggle */}
             <div className="space-y-2">
-              <Label className="text-sm font-medium">Foto</Label>
-              <MultiImageUpload
-                images={formData.images}
-                onChange={(images) => setFormData((prev) => ({ ...prev, images }))}
-                maxImages={5}
-                error={errors.images}
-                disabled={submitting}
-              />
+              <Label className="text-sm font-medium">Stato</Label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={() => setFormData((prev) => ({ ...prev, visitStatus: "visited", visitDate: prev.visitDate || new Date() }))}
+                  className={cn(
+                    "flex-1 py-3 px-4 rounded-lg border-2 transition-all duration-200 text-sm font-medium",
+                    formData.visitStatus === "visited"
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground hover:border-muted-foreground"
+                  )}
+                >
+                  ✅ Ci sono stato
+                </button>
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={() => setFormData((prev) => ({ ...prev, visitStatus: "wishlist" }))}
+                  className={cn(
+                    "flex-1 py-3 px-4 rounded-lg border-2 transition-all duration-200 text-sm font-medium",
+                    formData.visitStatus === "wishlist"
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground hover:border-muted-foreground"
+                  )}
+                >
+                  📌 Vorrei andarci
+                </button>
+              </div>
             </div>
 
             {/* Name with Place Search */}
@@ -437,33 +503,89 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
               </div>
             )}
 
-            {/* Rating */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Valutazione</Label>
-              <div className="flex items-center gap-2">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    type="button"
-                    disabled={submitting}
-                    onClick={() => setFormData((prev) => ({ ...prev, rating: star }))}
-                    onMouseEnter={() => setHoverRating(star)}
-                    onMouseLeave={() => setHoverRating(0)}
-                    className="p-1 transition-transform hover:scale-110"
-                  >
-                    <Star
-                      className={cn(
-                        "w-8 h-8 transition-colors",
-                        (hoverRating || formData.rating) >= star
-                          ? "fill-primary text-primary"
-                          : "fill-muted text-muted",
-                      )}
-                    />
-                  </button>
-                ))}
+            {/* Rating - only for visited */}
+            {formData.visitStatus === "visited" && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Valutazione</Label>
+                <div className="flex items-center gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      disabled={submitting}
+                      onClick={() => setFormData((prev) => ({ ...prev, rating: star }))}
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      className="p-1 transition-transform hover:scale-110"
+                    >
+                      <Star
+                        className={cn(
+                          "w-8 h-8 transition-colors",
+                          (hoverRating || formData.rating) >= star
+                            ? "fill-primary text-primary"
+                            : "fill-muted text-muted",
+                        )}
+                      />
+                    </button>
+                  ))}
+                </div>
+                {errors.rating && <p className="text-xs text-destructive">{errors.rating}</p>}
               </div>
-              {errors.rating && <p className="text-xs text-destructive">{errors.rating}</p>}
-            </div>
+            )}
+
+            {/* Visit Date - only for visited */}
+            {formData.visitStatus === "visited" && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Data della visita</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !formData.visitDate && "text-muted-foreground"
+                      )}
+                      disabled={submitting}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {formData.visitDate ? format(formData.visitDate, "PPP", { locale: it }) : <span>Seleziona data</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={formData.visitDate}
+                      onSelect={(date) => setFormData((prev) => ({ ...prev, visitDate: date || undefined }))}
+                      disabled={(date) => date > new Date()}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
+
+            {/* Avg Price Per Person - only for visited */}
+            {formData.visitStatus === "visited" && (
+              <div className="space-y-2">
+                <Label htmlFor="avgPrice" className="text-sm font-medium">
+                  Prezzo medio a persona (€)
+                </Label>
+                <div className="relative">
+                  <Euro className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="avgPrice"
+                    type="number"
+                    placeholder="Es. 25"
+                    value={formData.avgPricePerPerson ?? ""}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, avgPricePerPerson: e.target.value ? Number(e.target.value) : undefined }))}
+                    className="pl-10"
+                    min={0}
+                    disabled={submitting}
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Location */}
             <div className="space-y-2">
@@ -483,6 +605,20 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
                 />
               </div>
               {errors.location && <p className="text-xs text-destructive">{errors.location}</p>}
+              {/* Show parsed address info */}
+              {(formData.city || formData.province || formData.region) && (
+                <div className="flex flex-wrap gap-1.5">
+                  {formData.city && (
+                    <span className="px-2 py-0.5 text-xs bg-secondary rounded-full text-muted-foreground">{formData.city}</span>
+                  )}
+                  {formData.province && (
+                    <span className="px-2 py-0.5 text-xs bg-secondary rounded-full text-muted-foreground">{formData.province}</span>
+                  )}
+                  {formData.region && (
+                    <span className="px-2 py-0.5 text-xs bg-secondary rounded-full text-muted-foreground">{formData.region}</span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* GPS Coordinates */}
@@ -510,14 +646,28 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
               {errors.latitude && <p className="text-xs text-destructive">{errors.latitude}</p>}
             </div>
 
-            {/* Description */}
+            {/* Photo Upload */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">
+                Foto {formData.googlePhotoUrl && <span className="text-muted-foreground font-normal">(foto di default da Google)</span>}
+              </Label>
+              <MultiImageUpload
+                images={formData.images}
+                onChange={(images) => setFormData((prev) => ({ ...prev, images }))}
+                maxImages={5}
+                error={errors.images}
+                disabled={submitting}
+              />
+            </div>
+
+            {/* Description - required only for visited */}
             <div className="space-y-2">
               <Label htmlFor="description" className="text-sm font-medium">
-                La tua esperienza
+                La tua esperienza {formData.visitStatus === "wishlist" && <span className="text-muted-foreground font-normal">(opzionale)</span>}
               </Label>
               <Textarea
                 id="description"
-                placeholder="Racconta la tua esperienza..."
+                placeholder={formData.visitStatus === "visited" ? "Racconta la tua esperienza..." : "Perché vorresti andarci? (opzionale)"}
                 value={formData.description}
                 onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
                 className={cn("min-h-[120px] resize-none", errors.description && "border-destructive")}
@@ -543,7 +693,7 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
               ) : isEditing ? (
                 "Salva Modifiche"
               ) : (
-                "Pubblica Recensione"
+                "Salva"
               )}
             </Button>
           </div>

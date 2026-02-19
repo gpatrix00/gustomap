@@ -18,6 +18,7 @@ import { Loader2 } from "lucide-react";
 import { Review } from "@/services/reviewsService";
 
 type FilterType = "tutti" | "ristoranti" | "bar";
+type VisitFilter = "tutti" | "visited" | "wishlist";
 type PlaceType = "ristorante" | "bar" | "caffetteria";
 type ViewMode = "list" | "map";
 
@@ -26,6 +27,7 @@ const Index = () => {
   const { reviews, loading: reviewsLoading, addReview, updateReview, deleteReview, fetchReviews } = useReviews();
   
   const [filter, setFilter] = useState<FilterType>("tutti");
+  const [visitFilter, setVisitFilter] = useState<VisitFilter>("tutti");
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -35,23 +37,28 @@ const Index = () => {
 
   const filteredReviews = useMemo(() => {
     return reviews.filter((review) => {
-      // Type filter
       const typeMatch = 
         filter === "tutti" ? true :
         filter === "ristoranti" ? review.type === "ristorante" :
         filter === "bar" ? (review.type === "bar" || review.type === "caffetteria") :
         true;
 
-      // Search filter
+      const visitMatch =
+        visitFilter === "tutti" ? true :
+        review.visit_status === visitFilter;
+
       const query = searchQuery.toLowerCase().trim();
       const searchMatch = !query || 
         review.name.toLowerCase().includes(query) ||
         review.location.toLowerCase().includes(query) ||
-        review.description.toLowerCase().includes(query);
+        review.description.toLowerCase().includes(query) ||
+        (review.city && review.city.toLowerCase().includes(query)) ||
+        (review.province && review.province.toLowerCase().includes(query)) ||
+        (review.region && review.region.toLowerCase().includes(query));
 
-      return typeMatch && searchMatch;
+      return typeMatch && visitMatch && searchMatch;
     });
-  }, [reviews, filter, searchQuery]);
+  }, [reviews, filter, visitFilter, searchQuery]);
 
   const stats = {
     totalReviews: reviews.length,
@@ -68,10 +75,8 @@ const Index = () => {
 
     for (const image of images) {
       if (typeof image === "string") {
-        // Already a URL
         uploadedUrls.push(image);
       } else {
-        // Upload file
         const fileExt = image.name.split(".").pop();
         const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
 
@@ -93,13 +98,15 @@ const Index = () => {
   };
 
   const getImageUrls = (review: Review): string[] => {
-    // Handle the image_urls field which could be an array or null
     if (review.image_urls && Array.isArray(review.image_urls)) {
       return review.image_urls as string[];
     }
-    // Fallback to legacy image_url
     if (review.image_url) {
       return [review.image_url];
+    }
+    // Fallback to google photo
+    if (review.google_photo_url) {
+      return [review.google_photo_url];
     }
     return [];
   };
@@ -114,26 +121,40 @@ const Index = () => {
     latitude?: number;
     longitude?: number;
     cuisineType?: string;
+    visitStatus: string;
+    visitDate?: Date;
+    avgPricePerPerson?: number;
+    city?: string;
+    province?: string;
+    region?: string;
+    googlePhotoUrl?: string;
   }) => {
     try {
-      const imageUrls = await uploadImages(data.images);
+      const imageUrls = data.images.length > 0 ? await uploadImages(data.images) : [];
       
       await addReview({
         name: data.name,
         type: data.type,
-        rating: data.rating,
+        rating: data.visitStatus === "visited" ? data.rating : 0,
         location: data.location,
-        description: data.description,
-        image_url: imageUrls[0] || null,
-        image_urls: imageUrls,
+        description: data.description || "",
+        image_url: imageUrls[0] || data.googlePhotoUrl || null,
+        image_urls: imageUrls.length > 0 ? imageUrls : (data.googlePhotoUrl ? [data.googlePhotoUrl] : []),
         latitude: data.latitude || null,
         longitude: data.longitude || null,
         is_public: false,
         cuisine_type: data.cuisineType || null,
+        visit_status: data.visitStatus,
+        visit_date: data.visitDate ? data.visitDate.toISOString().split('T')[0] : null,
+        avg_price_per_person: data.avgPricePerPerson || null,
+        city: data.city || null,
+        province: data.province || null,
+        region: data.region || null,
+        google_photo_url: data.googlePhotoUrl || null,
       });
 
-      toast.success("Recensione pubblicata!", {
-        description: `La tua recensione di ${data.name} è stata aggiunta.`,
+      toast.success(data.visitStatus === "wishlist" ? "Locale aggiunto alla lista!" : "Recensione pubblicata!", {
+        description: `${data.name} è stato aggiunto.`,
       });
     } catch (error: any) {
       console.error("Error adding review:", error);
@@ -154,21 +175,35 @@ const Index = () => {
     latitude?: number;
     longitude?: number;
     cuisineType?: string;
+    visitStatus: string;
+    visitDate?: Date;
+    avgPricePerPerson?: number;
+    city?: string;
+    province?: string;
+    region?: string;
+    googlePhotoUrl?: string;
   }) => {
     try {
-      const imageUrls = await uploadImages(data.images);
+      const imageUrls = data.images.length > 0 ? await uploadImages(data.images) : [];
 
       await updateReview(id, {
         name: data.name,
         type: data.type,
-        rating: data.rating,
+        rating: data.visitStatus === "visited" ? data.rating : 0,
         location: data.location,
-        description: data.description,
-        image_url: imageUrls[0] || null,
-        image_urls: imageUrls,
+        description: data.description || "",
+        image_url: imageUrls[0] || data.googlePhotoUrl || null,
+        image_urls: imageUrls.length > 0 ? imageUrls : (data.googlePhotoUrl ? [data.googlePhotoUrl] : []),
         latitude: data.latitude || null,
         longitude: data.longitude || null,
         cuisine_type: data.cuisineType || null,
+        visit_status: data.visitStatus,
+        visit_date: data.visitDate ? data.visitDate.toISOString().split('T')[0] : null,
+        avg_price_per_person: data.avgPricePerPerson || null,
+        city: data.city || null,
+        province: data.province || null,
+        region: data.region || null,
+        google_photo_url: data.googlePhotoUrl || null,
       });
 
       setEditingReview(null);
@@ -202,7 +237,6 @@ const Index = () => {
   const handleTogglePublic = async (reviewId: string, isPublic: boolean) => {
     try {
       await updateReview(reviewId, { is_public: isPublic });
-      // Update selected review if it's the one being toggled
       if (selectedReview?.id === reviewId) {
         setSelectedReview({ ...selectedReview, is_public: isPublic });
       }
@@ -229,7 +263,6 @@ const Index = () => {
     }
   };
 
-  // Show loading state
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -238,7 +271,6 @@ const Index = () => {
     );
   }
 
-  // Show auth form if not authenticated
   if (!isAuthenticated) {
     return <AuthForm onSuccess={fetchReviews} />;
   }
@@ -248,7 +280,6 @@ const Index = () => {
       <Header />
       
       <main className="container max-w-lg mx-auto px-4 py-6 space-y-6">
-        {/* Welcome Message */}
         <div className="space-y-1">
           <h2 className="text-2xl font-display font-semibold text-foreground">
             Bentornato! 👋
@@ -258,23 +289,23 @@ const Index = () => {
           </p>
         </div>
 
-        {/* View Toggle */}
         <ViewToggle mode={viewMode} onChange={setViewMode} />
 
-        {/* Search Bar */}
         <SearchBar
           value={searchQuery}
           onChange={setSearchQuery}
-          placeholder="Cerca per nome o posizione..."
+          placeholder="Cerca per nome, città, provincia..."
         />
 
-        {/* Stats */}
         <StatsBar {...stats} />
 
-        {/* Filters */}
-        <FilterTabs activeFilter={filter} onFilterChange={setFilter} />
+        <FilterTabs
+          activeFilter={filter}
+          onFilterChange={setFilter}
+          visitFilter={visitFilter}
+          onVisitFilterChange={setVisitFilter}
+        />
 
-        {/* Content */}
         {viewMode === "map" ? (
           <MapView
             reviews={filteredReviews.map((review) => ({
@@ -317,6 +348,8 @@ const Index = () => {
                   images={getImageUrls(review)}
                   description={review.description}
                   cuisineType={review.cuisine_type}
+                  visitStatus={review.visit_status}
+                  avgPricePerPerson={review.avg_price_per_person}
                   onClick={() => handleReviewClick(review)}
                   className={`animation-delay-${index * 100}`}
                 />
@@ -358,6 +391,13 @@ const Index = () => {
           latitude: editingReview.latitude,
           longitude: editingReview.longitude,
           cuisine_type: editingReview.cuisine_type,
+          visit_status: editingReview.visit_status,
+          visit_date: editingReview.visit_date,
+          avg_price_per_person: editingReview.avg_price_per_person,
+          city: editingReview.city,
+          province: editingReview.province,
+          region: editingReview.region,
+          google_photo_url: editingReview.google_photo_url,
         } : null}
         onUpdate={handleUpdateReview}
       />
@@ -380,6 +420,12 @@ const Index = () => {
           description: selectedReview.description,
           isPublic: selectedReview.is_public,
           cuisineType: selectedReview.cuisine_type,
+          visitStatus: selectedReview.visit_status,
+          visitDate: selectedReview.visit_date,
+          avgPricePerPerson: selectedReview.avg_price_per_person,
+          city: selectedReview.city,
+          province: selectedReview.province,
+          region: selectedReview.region,
         } : null}
         onEdit={() => selectedReview && handleEditReview(selectedReview)}
         onDelete={() => selectedReview && handleDeleteReview(selectedReview.id)}

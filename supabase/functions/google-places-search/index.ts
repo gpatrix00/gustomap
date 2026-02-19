@@ -27,12 +27,14 @@ Deno.serve(async (req) => {
     }
 
     // Use Text Search (New) to find places
+    const fieldMask = 'places.id,places.displayName,places.formattedAddress,places.location,places.types,places.primaryType,places.primaryTypeDisplayName,places.photos,places.addressComponents';
+    
     const response = await fetch('https://places.googleapis.com/v1/places:searchText', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': apiKey,
-        'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location,places.types,places.primaryType,places.primaryTypeDisplayName',
+        'X-Goog-FieldMask': fieldMask,
       },
       body: JSON.stringify({
         textQuery: query,
@@ -52,7 +54,7 @@ Deno.serve(async (req) => {
         headers: {
           'Content-Type': 'application/json',
           'X-Goog-Api-Key': apiKey,
-          'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.location,places.types,places.primaryType,places.primaryTypeDisplayName',
+          'X-Goog-FieldMask': fieldMask,
         },
         body: JSON.stringify({
           textQuery: query,
@@ -71,7 +73,7 @@ Deno.serve(async (req) => {
       }
 
       const retryData = await retryResponse.json();
-      const results = mapPlaces(retryData.places || []);
+      const results = mapPlaces(retryData.places || [], apiKey);
       return new Response(
         JSON.stringify({ success: true, results }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -79,7 +81,7 @@ Deno.serve(async (req) => {
     }
 
     const data = await response.json();
-    const results = mapPlaces(data.places || []);
+    const results = mapPlaces(data.places || [], apiKey);
 
     return new Response(
       JSON.stringify({ success: true, results }),
@@ -94,7 +96,20 @@ Deno.serve(async (req) => {
   }
 });
 
-function mapPlaces(places: any[]) {
+function extractAddressComponent(components: any[], type: string): string | undefined {
+  if (!components) return undefined;
+  const comp = components.find((c: any) => c.types?.includes(type));
+  return comp?.longText || comp?.shortText || undefined;
+}
+
+function getPhotoUrl(photos: any[], apiKey: string): string | undefined {
+  if (!photos || photos.length === 0) return undefined;
+  const photoName = photos[0].name;
+  if (!photoName) return undefined;
+  return `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=800&key=${apiKey}`;
+}
+
+function mapPlaces(places: any[], apiKey: string) {
   return places.map((place: any) => {
     // Determine type based on Google types
     let type = 'ristorante';
@@ -107,6 +122,16 @@ function mapPlaces(places: any[]) {
       type = 'caffetteria';
     }
 
+    // Extract address components
+    const addressComponents = place.addressComponents || [];
+    const city = extractAddressComponent(addressComponents, 'locality') 
+      || extractAddressComponent(addressComponents, 'administrative_area_level_3');
+    const province = extractAddressComponent(addressComponents, 'administrative_area_level_2');
+    const region = extractAddressComponent(addressComponents, 'administrative_area_level_1');
+
+    // Get photo URL
+    const photoUrl = getPhotoUrl(place.photos || [], apiKey);
+
     return {
       placeId: place.id,
       name: place.displayName?.text || '',
@@ -115,6 +140,10 @@ function mapPlaces(places: any[]) {
       longitude: place.location?.longitude,
       type,
       primaryType: place.primaryTypeDisplayName?.text || '',
+      city,
+      province,
+      region,
+      photoUrl,
     };
   });
 }

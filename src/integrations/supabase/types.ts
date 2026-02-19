@@ -46,9 +46,12 @@ export type Database = {
       }
       reviews: {
         Row: {
+          avg_price_per_person: number | null
+          city: string | null
           created_at: string
           cuisine_type: string | null
           description: string
+          google_photo_url: string | null
           id: string
           image_url: string | null
           image_urls: Json | null
@@ -57,15 +60,22 @@ export type Database = {
           location: string
           longitude: number | null
           name: string
+          province: string | null
           rating: number
+          region: string | null
           type: string
           updated_at: string
           user_id: string
+          visit_date: string | null
+          visit_status: string
         }
         Insert: {
+          avg_price_per_person?: number | null
+          city?: string | null
           created_at?: string
           cuisine_type?: string | null
           description: string
+          google_photo_url?: string | null
           id?: string
           image_url?: string | null
           image_urls?: Json | null
@@ -74,15 +84,22 @@ export type Database = {
           location: string
           longitude?: number | null
           name: string
+          province?: string | null
           rating: number
+          region?: string | null
           type: string
           updated_at?: string
           user_id: string
+          visit_date?: string | null
+          visit_status?: string
         }
         Update: {
+          avg_price_per_person?: number | null
+          city?: string | null
           created_at?: string
           cuisine_type?: string | null
           description?: string
+          google_photo_url?: string | null
           id?: string
           image_url?: string | null
           image_urls?: Json | null
@@ -91,10 +108,14 @@ export type Database = {
           location?: string
           longitude?: number | null
           name?: string
+          province?: string | null
           rating?: number
+          region?: string | null
           type?: string
           updated_at?: string
           user_id?: string
+          visit_date?: string | null
+          visit_status?: string
         }
         Relationships: []
       }
