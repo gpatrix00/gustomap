@@ -9,9 +9,20 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { query } = await req.json();
+    const body = await req.json();
+    const query = body?.query;
 
-    if (!query || query.length < 2) {
+    // Validate query type
+    if (!query || typeof query !== 'string') {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid query parameter' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Sanitize and validate length
+    const sanitizedQuery = query.trim();
+    if (sanitizedQuery.length < 2 || sanitizedQuery.length > 200) {
       return new Response(
         JSON.stringify({ success: true, results: [] }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -37,7 +48,7 @@ Deno.serve(async (req) => {
         'X-Goog-FieldMask': fieldMask,
       },
       body: JSON.stringify({
-        textQuery: query,
+        textQuery: sanitizedQuery,
         languageCode: 'it',
         maxResultCount: 8,
         includedType: 'restaurant',
@@ -57,7 +68,7 @@ Deno.serve(async (req) => {
           'X-Goog-FieldMask': fieldMask,
         },
         body: JSON.stringify({
-          textQuery: query,
+          textQuery: sanitizedQuery,
           languageCode: 'it',
           maxResultCount: 8,
         }),
