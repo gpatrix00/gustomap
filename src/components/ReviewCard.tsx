@@ -1,5 +1,6 @@
 import { Star, MapPin, Clock, Euro } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSignedUrls } from "@/hooks/useSignedUrls";
 
 interface ReviewCardProps {
   name: string;
@@ -56,7 +57,8 @@ const ReviewCard = ({
     caffetteria: "Caffetteria",
   };
 
-  const coverImage = images[0] || "/placeholder.svg";
+  const resolvedImages = useSignedUrls(images);
+  const coverImage = resolvedImages[0] || "/placeholder.svg";
   const isWishlist = visitStatus === "wishlist";
 
   return (
@@ -88,7 +90,7 @@ const ReviewCard = ({
               {CUISINE_LABELS[cuisineType]}
             </span>
           )}
-          {images.length > 1 && (
+          {resolvedImages.length > 1 && (
             <span className="px-2 py-1 bg-card/90 backdrop-blur-sm text-xs font-medium rounded-full text-foreground">
               +{images.length - 1}
             </span>

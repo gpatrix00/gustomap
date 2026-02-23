@@ -64,10 +64,23 @@ export const reviewsService = {
 
     if (uploadError) throw uploadError;
 
-    const { data: { publicUrl } } = supabase.storage
-      .from("review-images")
-      .getPublicUrl(fileName);
+    // Return the storage path, not a public URL
+    return fileName;
+  },
 
-    return publicUrl;
+  async getSignedUrl(path: string): Promise<string> {
+    // If it's already a full URL (legacy or external), return as-is
+    if (path.startsWith("http")) return path;
+    
+    const { data, error } = await supabase.storage
+      .from("review-images")
+      .createSignedUrl(path, 3600); // 1 hour expiry
+
+    if (error) throw error;
+    return data.signedUrl;
+  },
+
+  async getSignedUrls(paths: string[]): Promise<string[]> {
+    return Promise.all(paths.map((p) => this.getSignedUrl(p)));
   },
 };
