@@ -279,7 +279,7 @@ const Index = () => {
     <div className="min-h-screen bg-background pb-24">
       <Header />
       
-      <main className="container max-w-lg mx-auto px-4 py-6 space-y-6">
+      <main className="container max-w-6xl mx-auto px-4 py-6 space-y-6">
         <div className="space-y-1">
           <h2 className="text-2xl font-display font-semibold text-foreground">
             Bentornato! 👋
@@ -325,12 +325,12 @@ const Index = () => {
                 handleReviewClick(review);
               }
             }}
-            className="h-[60vh] min-h-[400px]"
+            className="h-[60vh] min-h-[400px] lg:h-[70vh]"
           />
         ) : (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {reviewsLoading ? (
-              <div className="flex justify-center py-12">
+              <div className="flex justify-center py-12 col-span-full">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
             ) : filteredReviews.length > 0 ? (
@@ -355,7 +355,7 @@ const Index = () => {
                 />
               ))
             ) : (
-              <div className="text-center py-12 space-y-2">
+              <div className="text-center py-12 space-y-2 col-span-full">
                 <p className="text-muted-foreground">
                   {searchQuery
                     ? `Nessun risultato per "${searchQuery}"`

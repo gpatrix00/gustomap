@@ -343,7 +343,7 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
 
   return (
     <Sheet open={open} onOpenChange={handleClose}>
-      <SheetContent side="bottom" className="h-[90vh] rounded-t-3xl px-0">
+      <SheetContent side="bottom" className="h-[90vh] rounded-t-3xl px-0 md:max-w-2xl md:mx-auto">
         <SheetHeader className="px-6 pb-4 border-b border-border">
           <div className="flex items-center justify-between">
             <SheetTitle className="font-display text-xl">
