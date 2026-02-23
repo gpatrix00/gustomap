@@ -33,7 +33,7 @@ const Header = () => {
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="container max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src={logo} alt="GustoMap" className="w-9 h-9 rounded-full" />
+            <img src={logo} alt="GustoMap" className="w-10 h-10 rounded-full object-cover scale-[1.35]" />
             <div>
               <h1 className="font-display text-xl font-semibold text-foreground">
                 GustoMap
