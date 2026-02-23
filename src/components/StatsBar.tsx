@@ -9,7 +9,7 @@ interface StatsBarProps {
 
 const StatsBar = ({ totalReviews, restaurants, bars, avgRating }: StatsBarProps) => {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-card rounded-lg shadow-soft">
+    <div className="grid grid-cols-4 gap-2 sm:gap-3 p-3 sm:p-4 bg-card rounded-lg shadow-soft">
       <div className="text-center">
         <p className="text-2xl font-display font-semibold text-foreground">{totalReviews}</p>
         <p className="text-xs text-muted-foreground">Recensioni</p>
