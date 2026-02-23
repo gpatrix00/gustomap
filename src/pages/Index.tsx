@@ -86,11 +86,8 @@ const Index = () => {
 
         if (uploadError) throw uploadError;
 
-        const { data: { publicUrl } } = supabase.storage
-          .from("review-images")
-          .getPublicUrl(fileName);
-
-        uploadedUrls.push(publicUrl);
+        // Store the path, not a public URL
+        uploadedUrls.push(fileName);
       }
     }
 

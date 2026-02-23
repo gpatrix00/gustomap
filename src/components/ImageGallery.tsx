@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSignedUrls } from "@/hooks/useSignedUrls";
 
 interface ImageGalleryProps {
   images: string[];
@@ -9,6 +10,7 @@ interface ImageGalleryProps {
 }
 
 const ImageGallery = ({ images, className }: ImageGalleryProps) => {
+  const resolvedImages = useSignedUrls(images);
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -32,7 +34,7 @@ const ImageGallery = ({ images, className }: ImageGalleryProps) => {
     onSelect();
   });
 
-  if (images.length === 0) {
+  if (resolvedImages.length === 0) {
     return (
       <div className={cn("bg-muted flex items-center justify-center", className)}>
         <span className="text-muted-foreground">Nessuna immagine</span>
@@ -40,11 +42,11 @@ const ImageGallery = ({ images, className }: ImageGalleryProps) => {
     );
   }
 
-  if (images.length === 1) {
+  if (resolvedImages.length === 1) {
     return (
       <div className={cn("overflow-hidden", className)}>
         <img
-          src={images[0]}
+          src={resolvedImages[0]}
           alt="Review"
           className="w-full h-full object-cover"
         />
@@ -57,7 +59,7 @@ const ImageGallery = ({ images, className }: ImageGalleryProps) => {
       {/* Carousel */}
       <div className="overflow-hidden h-full" ref={emblaRef}>
         <div className="flex h-full">
-          {images.map((image, index) => (
+          {resolvedImages.map((image, index) => (
             <div
               key={index}
               className="flex-[0_0_100%] min-w-0 h-full"
@@ -88,7 +90,7 @@ const ImageGallery = ({ images, className }: ImageGalleryProps) => {
 
       {/* Dots Indicator */}
       <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-        {images.map((_, index) => (
+        {resolvedImages.map((_, index) => (
           <button
             key={index}
             onClick={() => emblaApi?.scrollTo(index)}
