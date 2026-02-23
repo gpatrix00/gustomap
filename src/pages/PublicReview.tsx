@@ -201,7 +201,7 @@ const PublicReview = () => {
           <p className="text-xs text-muted-foreground">
             Condiviso tramite{" "}
             <Link to="/" className="text-primary hover:underline font-medium">
-              Gusto
+              GustoMap
             </Link>
           </p>
         </div>

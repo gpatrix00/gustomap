@@ -72,7 +72,7 @@ const AuthForm = ({ onSuccess }: AuthFormProps) => {
       <div className="w-full max-w-sm space-y-8">
         {/* Logo */}
         <div className="text-center space-y-2">
-          <h1 className="font-display text-4xl font-bold text-foreground">Gusto</h1>
+          <h1 className="font-display text-4xl font-bold text-foreground">GustoMap</h1>
           <p className="text-muted-foreground font-body">
             Le tue esperienze culinarie
           </p>
