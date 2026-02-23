@@ -33,7 +33,7 @@ const Header = () => {
         <div className="container max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div>
             <h1 className="font-display text-xl font-semibold text-foreground">
-              Gusto
+              GustoMap
             </h1>
             <p className="text-xs text-muted-foreground font-body">
               Le tue esperienze
