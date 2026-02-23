@@ -63,8 +63,8 @@ const Index = () => {
   const visitedReviews = reviews.filter((r) => r.visit_status !== "wishlist");
   const stats = {
     totalReviews: visitedReviews.length,
-    restaurants: visitedReviews.filter((r) => r.type === "ristorante").length,
-    bars: visitedReviews.filter((r) => r.type === "bar" || r.type === "caffetteria").length,
+    restaurants: reviews.filter((r) => r.type === "ristorante").length,
+    bars: reviews.filter((r) => r.type === "bar" || r.type === "caffetteria").length,
     avgRating: visitedReviews.length > 0 ? visitedReviews.reduce((acc, r) => acc + r.rating, 0) / visitedReviews.length : 0,
   };
 
