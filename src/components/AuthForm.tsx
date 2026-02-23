@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import logo from "@/assets/logo.png";
 
 interface AuthFormProps {
   onSuccess: () => void;
@@ -71,7 +72,8 @@ const AuthForm = ({ onSuccess }: AuthFormProps) => {
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-sm space-y-8">
         {/* Logo */}
-        <div className="text-center space-y-2">
+        <div className="text-center space-y-3">
+          <img src={logo} alt="GustoMap" className="w-20 h-20 rounded-full mx-auto" />
           <h1 className="font-display text-4xl font-bold text-foreground">GustoMap</h1>
           <p className="text-muted-foreground font-body">
             Le tue esperienze culinarie
