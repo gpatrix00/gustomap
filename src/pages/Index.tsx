@@ -338,10 +338,16 @@ const Index = () => {
                   name={review.name}
                   type={review.type as PlaceType}
                   rating={review.rating}
-                  date={new Date(review.created_at).toLocaleDateString("it-IT", {
-                    day: "numeric",
-                    month: "short",
-                  })}
+                  date={review.visit_date
+                    ? new Date(review.visit_date + "T00:00:00").toLocaleDateString("it-IT", {
+                        day: "numeric",
+                        month: "short",
+                      })
+                    : new Date(review.created_at).toLocaleDateString("it-IT", {
+                        day: "numeric",
+                        month: "short",
+                      })
+                  }
                   location={review.location}
                   images={getImageUrls(review)}
                   description={review.description}

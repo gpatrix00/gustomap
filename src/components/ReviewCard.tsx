@@ -135,10 +135,12 @@ const ReviewCard = ({
             <MapPin className="w-3.5 h-3.5" />
             {location}
           </span>
-          <span className="flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5" />
-            {date}
-          </span>
+          {!isWishlist && date && (
+            <span className="flex items-center gap-1">
+              <Clock className="w-3.5 h-3.5" />
+              {date}
+            </span>
+          )}
           {avgPricePerPerson != null && (
             <span className="flex items-center gap-1">
               <Euro className="w-3.5 h-3.5" />
