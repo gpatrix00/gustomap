@@ -30,7 +30,7 @@ const Header = () => {
   return (
     <>
       <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
-        <div className="container max-w-lg mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="container max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div>
             <h1 className="font-display text-xl font-semibold text-foreground">
               Gusto

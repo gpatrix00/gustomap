@@ -88,7 +88,7 @@ const ReviewDetail = ({ open, onOpenChange, review, onEdit, onDelete, onTogglePu
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent 
         side="bottom" 
-        className="h-full p-0 border-0 rounded-none"
+        className="h-full p-0 border-0 rounded-none md:max-w-2xl md:mx-auto md:rounded-t-2xl"
       >
         <div className="h-full flex flex-col bg-background">
           {/* Hero Image Gallery */}
