@@ -342,10 +342,12 @@ const Index = () => {
                     ? new Date(review.visit_date + "T00:00:00").toLocaleDateString("it-IT", {
                         day: "numeric",
                         month: "short",
+                        year: "numeric",
                       })
                     : new Date(review.created_at).toLocaleDateString("it-IT", {
                         day: "numeric",
                         month: "short",
+                        year: "numeric",
                       })
                   }
                   location={review.location}
