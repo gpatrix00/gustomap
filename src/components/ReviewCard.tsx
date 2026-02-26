@@ -144,7 +144,7 @@ const ReviewCard = ({
           {avgPricePerPerson != null && (
             <span className="flex items-center gap-1">
               <Euro className="w-3.5 h-3.5" />
-              {avgPricePerPerson}€
+              € {avgPricePerPerson}
             </span>
           )}
         </div>
