@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 interface MultiImageUploadProps {
   images: (File | string)[];
   onChange: (images: (File | string)[]) => void;
-  maxImages?: number;
   error?: string;
   disabled?: boolean;
 }
@@ -13,7 +12,6 @@ interface MultiImageUploadProps {
 const MultiImageUpload = ({
   images,
   onChange,
-  maxImages = 5,
   error,
   disabled,
 }: MultiImageUploadProps) => {
@@ -34,9 +32,6 @@ const MultiImageUpload = ({
       if (file.size > 5 * 1024 * 1024) {
         continue; // Skip files > 5MB
       }
-      if (images.length + validFiles.length >= maxImages) {
-        break;
-      }
       validFiles.push(file);
     }
 
@@ -55,7 +50,7 @@ const MultiImageUpload = ({
     onChange(newImages);
   };
 
-  const canAddMore = images.length < maxImages;
+  const canAddMore = true;
 
   return (
     <div className="space-y-2">
@@ -88,7 +83,7 @@ const MultiImageUpload = ({
             Tocca per aggiungere foto
           </span>
           <span className="text-xs text-muted-foreground">
-            Massimo {maxImages} foto, 5MB ciascuna
+            5MB ciascuna
           </span>
         </button>
       ) : (
@@ -134,7 +129,7 @@ const MultiImageUpload = ({
             >
               <Plus className="w-6 h-6 text-muted-foreground" />
               <span className="text-[10px] text-muted-foreground">
-                {images.length}/{maxImages}
+                +
               </span>
             </button>
           )}

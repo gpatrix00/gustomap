@@ -654,7 +654,7 @@ const AddReviewForm = ({ open, onOpenChange, onSubmit, editingReview, onUpdate }
               <MultiImageUpload
                 images={formData.images}
                 onChange={(images) => setFormData((prev) => ({ ...prev, images }))}
-                maxImages={5}
+                
                 error={errors.images}
                 disabled={submitting}
               />
