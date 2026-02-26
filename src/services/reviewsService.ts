@@ -13,7 +13,13 @@ export const reviewsService = {
       .order("created_at", { ascending: false });
     
     if (error) throw error;
-    return data || [];
+    
+    // Sort: if visit_date exists use it, otherwise use created_at
+    return (data || []).sort((a, b) => {
+      const dateA = a.visit_date ? new Date(a.visit_date + "T00:00:00").getTime() : new Date(a.created_at).getTime();
+      const dateB = b.visit_date ? new Date(b.visit_date + "T00:00:00").getTime() : new Date(b.created_at).getTime();
+      return dateB - dateA;
+    });
   },
 
   async create(review: Omit<ReviewInsert, "user_id">): Promise<Review> {
